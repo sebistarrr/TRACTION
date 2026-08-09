@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>Tractions</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Suivi de tractions hors ligne : séries, objectif quotidien, évolution par jour, semaine, mois et année.">
+<meta name="description" content="Suivi de tractions hors ligne : séries, objectif quotidien, évolution par semaine, mois et année.">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#08151D">
 <meta name="mobile-web-app-capable" content="yes">
@@ -28,172 +28,192 @@
     <span class="brand-name">Tractions</span>
   </div>
 
-  <p class="cumul">
-    <span class="cumul-value" id="cumulValue">0</span>
-    <span class="cumul-label">au total</span>
-  </p>
-
-  <button type="button" class="icon-btn" id="openAdmin" aria-label="Ouvrir l’administration">
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <circle cx="12" cy="12" r="3.1" fill="none" stroke="currentColor" stroke-width="1.8"/>
-      <path d="M12 2.6l1.5 2.6 3-.4.6 3 2.7 1.4-1.4 2.7 1.4 2.7-2.7 1.4-.6 3-3-.4L12 21.4l-1.5-2.6-3 .4-.6-3-2.7-1.4L5.6 12 4.2 9.3l2.7-1.4.6-3 3 .4z"
-            fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-    </svg>
-  </button>
+  <nav class="mainnav" role="tablist" aria-label="Sections">
+    <button type="button" role="tab" class="mainnav-tab is-active" id="nav-add"
+            data-view="add" aria-selected="true" aria-controls="view-add">Ajouter</button>
+    <button type="button" role="tab" class="mainnav-tab" id="nav-stats"
+            data-view="stats" aria-selected="false" aria-controls="view-stats" tabindex="-1">Évolution</button>
+    <button type="button" role="tab" class="mainnav-tab" id="nav-admin"
+            data-view="admin" aria-selected="false" aria-controls="view-admin" tabindex="-1">Administration</button>
+  </nav>
 </header>
 
-<main class="layout">
+<main class="shell">
 
-  <div class="column">
+  <!-- ============ 1. Ajouter ============ -->
+  <section class="view" id="view-add" role="tabpanel" aria-labelledby="nav-add" tabindex="0">
+    <div class="layout">
 
-    <!-- La barre : le chiffre du jour franchit la ligne -->
-    <section class="card hero" aria-labelledby="heroTitle">
-      <h1 class="card-title" id="heroTitle">Aujourd’hui</h1>
+      <section class="card hero" aria-labelledby="heroTitle">
+        <h1 class="card-title" id="heroTitle">Aujourd’hui</h1>
 
-      <div class="stage" id="stage">
-        <div class="stage-bar" id="stageBar" aria-hidden="true"></div>
-        <p class="stage-count" id="todayCount">0</p>
-      </div>
-
-      <p class="hero-goal">
-        Objectif <strong id="goalEcho">50</strong> par jour
-      </p>
-      <p class="hero-state" id="dayState">Rien aujourd’hui. Première série ?</p>
-
-      <ul class="pills" id="todaySets" aria-label="Séries du jour"></ul>
-    </section>
-
-    <!-- Saisie -->
-    <section class="card entry" aria-labelledby="entryTitle">
-      <h2 class="card-title" id="entryTitle">Ajouter une série</h2>
-
-      <div class="counter">
-        <button type="button" class="round-btn" id="decBtn" aria-label="Retirer une traction">−</button>
-        <input class="counter-input" id="repsInput" type="text" inputmode="numeric" pattern="[0-9]*"
-               autocomplete="off" value="10" maxlength="3" aria-label="Nombre de tractions">
-        <button type="button" class="round-btn" id="incBtn" aria-label="Ajouter une traction">+</button>
-      </div>
-
-      <ul class="shortcuts" id="shortcuts" aria-label="Raccourcis">
-        <li><button type="button" class="chip" data-reps="3">3</button></li>
-        <li><button type="button" class="chip" data-reps="5">5</button></li>
-        <li><button type="button" class="chip" data-reps="8">8</button></li>
-        <li><button type="button" class="chip" data-reps="10">10</button></li>
-        <li><button type="button" class="chip" data-reps="12">12</button></li>
-        <li><button type="button" class="chip" data-reps="15">15</button></li>
-        <li><button type="button" class="chip" data-reps="20">20</button></li>
-      </ul>
-
-      <div class="field">
-        <label class="field-label" for="dateInput">Date</label>
-        <input class="date-input" id="dateInput" type="date">
-        <button type="button" class="linklike" id="backToToday" hidden>Revenir à aujourd’hui</button>
-      </div>
-
-      <button type="button" class="cta" id="saveBtn">Enregistrer la série</button>
-    </section>
-  </div>
-
-  <div class="column">
-
-    <!-- Suivi -->
-    <section class="card stats" aria-labelledby="statsTitle">
-      <h2 class="card-title" id="statsTitle">Évolution</h2>
-
-      <div class="tabs" role="tablist" aria-label="Période affichée">
-        <button type="button" role="tab" class="tab is-active" id="tab-day"   aria-selected="true"  aria-controls="panel" data-scope="day">Jour</button>
-        <button type="button" role="tab" class="tab"           id="tab-week"  aria-selected="false" aria-controls="panel" data-scope="week" tabindex="-1">Semaine</button>
-        <button type="button" role="tab" class="tab"           id="tab-month" aria-selected="false" aria-controls="panel" data-scope="month" tabindex="-1">Mois</button>
-        <button type="button" role="tab" class="tab"           id="tab-year"  aria-selected="false" aria-controls="panel" data-scope="year" tabindex="-1">Année</button>
-      </div>
-
-      <div id="panel" role="tabpanel" aria-labelledby="tab-day" tabindex="0">
-
-        <p class="trend" id="trend"></p>
-
-        <div class="chart">
-          <div class="chart-plot" id="chartPlot">
-            <div class="goal-line" id="goalLine" hidden>
-              <span class="goal-line-tag" id="goalLineTag"></span>
-            </div>
-          </div>
-          <div class="chart-axis" id="chartAxis" aria-hidden="true"></div>
+        <div class="stage" id="stage">
+          <div class="stage-bar" id="stageBar" aria-hidden="true"></div>
+          <p class="stage-count" id="todayCount">0</p>
         </div>
 
-        <p class="detail" id="detail"></p>
+        <p class="hero-goal">Objectif <strong id="goalEcho">50</strong> par jour</p>
+        <p class="hero-state" id="dayState">Rien aujourd’hui. Première série ?</p>
 
-        <dl class="metrics">
-          <div class="metric">
-            <dt>Moyenne / jour</dt>
-            <dd id="mAvg">0</dd>
+        <ul class="pills" id="todaySets" aria-label="Séries du jour"></ul>
+      </section>
+
+      <section class="card entry" aria-labelledby="entryTitle">
+        <h2 class="card-title" id="entryTitle">Ajouter une série</h2>
+
+        <div class="counter">
+          <button type="button" class="round-btn" id="decBtn" aria-label="Retirer une traction">−</button>
+          <input class="counter-input" id="repsInput" type="text" inputmode="numeric" pattern="[0-9]*"
+                 autocomplete="off" value="10" maxlength="3" aria-label="Nombre de tractions">
+          <button type="button" class="round-btn" id="incBtn" aria-label="Ajouter une traction">+</button>
+        </div>
+
+        <ul class="shortcuts" id="shortcuts" aria-label="Raccourcis">
+          <li><button type="button" class="chip" data-reps="2">2</button></li>
+          <li><button type="button" class="chip" data-reps="4">4</button></li>
+          <li><button type="button" class="chip" data-reps="6">6</button></li>
+          <li><button type="button" class="chip" data-reps="8">8</button></li>
+          <li><button type="button" class="chip" data-reps="10">10</button></li>
+          <li><button type="button" class="chip" data-reps="12">12</button></li>
+        </ul>
+
+        <div class="field">
+          <label class="field-label" for="dateInput">Date</label>
+          <input class="date-input" id="dateInput" type="date">
+          <button type="button" class="linklike" id="backToToday" hidden>Revenir à aujourd’hui</button>
+        </div>
+
+        <button type="button" class="cta" id="saveBtn">Enregistrer la série</button>
+      </section>
+    </div>
+  </section>
+
+  <!-- ============ 2. Évolution ============ -->
+  <section class="view" id="view-stats" role="tabpanel" aria-labelledby="nav-stats" tabindex="0" hidden>
+    <div class="layout">
+
+      <section class="card records-card" aria-labelledby="recordsTitle">
+        <h2 class="card-title" id="recordsTitle">Records</h2>
+
+        <dl class="records">
+          <div class="record">
+            <dt>Record série</dt>
+            <dd id="rSet">0</dd>
+            <p class="record-sub" id="rSetSub">—</p>
           </div>
-          <div class="metric">
-            <dt>Record</dt>
-            <dd id="mBest">0</dd>
-            <p class="metric-sub" id="mBestSub">—</p>
+          <div class="record">
+            <dt>Record journée</dt>
+            <dd id="rDay">0</dd>
+            <p class="record-sub" id="rDaySub">—</p>
           </div>
-          <div class="metric">
-            <dt>Jours d’affilée</dt>
-            <dd id="mStreak">0</dd>
+          <div class="record">
+            <dt>Total tractions</dt>
+            <dd id="rTotal">0</dd>
+            <p class="record-sub" id="rTotalSub">—</p>
           </div>
         </dl>
-      </div>
-    </section>
-  </div>
+
+        <p class="streak" id="streakLine">Aucun jour d’affilée pour l’instant.</p>
+      </section>
+
+      <section class="card stats" aria-labelledby="statsTitle">
+        <h2 class="card-title" id="statsTitle">Évolution</h2>
+
+        <div class="tabs" role="tablist" aria-label="Période affichée">
+          <button type="button" role="tab" class="tab is-active" id="tab-week"  aria-selected="true"  aria-controls="panel" data-scope="week">Semaine</button>
+          <button type="button" role="tab" class="tab"           id="tab-month" aria-selected="false" aria-controls="panel" data-scope="month" tabindex="-1">Mois</button>
+          <button type="button" role="tab" class="tab"           id="tab-year"  aria-selected="false" aria-controls="panel" data-scope="year" tabindex="-1">Année</button>
+        </div>
+
+        <div id="panel" role="tabpanel" aria-labelledby="tab-week" tabindex="0">
+          <p class="trend" id="trend"></p>
+
+          <div class="chart">
+            <div class="chart-plot" id="chartPlot">
+              <div class="goal-line" id="goalLine" hidden>
+                <span class="goal-line-tag" id="goalLineTag"></span>
+              </div>
+            </div>
+            <div class="chart-axis" id="chartAxis" aria-hidden="true"></div>
+          </div>
+
+          <p class="detail" id="detail"></p>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <!-- ============ 3. Administration ============ -->
+  <section class="view" id="view-admin" role="tabpanel" aria-labelledby="nav-admin" tabindex="0" hidden>
+    <div class="layout">
+
+      <section class="card" aria-labelledby="goalTitle">
+        <h2 class="card-title" id="goalTitle">Objectif quotidien</h2>
+        <div class="counter counter--small">
+          <button type="button" class="round-btn" id="goalDec" aria-label="Baisser l’objectif">−</button>
+          <input class="counter-input" id="goalInput" type="text" inputmode="numeric" pattern="[0-9]*"
+                 autocomplete="off" maxlength="4" aria-label="Objectif quotidien">
+          <button type="button" class="round-btn" id="goalInc" aria-label="Monter l’objectif">+</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="seriesLinkTitle">
+        <h2 class="card-title" id="seriesLinkTitle">Séries enregistrées</h2>
+        <p class="admin-note" id="seriesSummary">Aucune série enregistrée.</p>
+        <button type="button" class="btn btn--wide btn--nav" id="openSeries">
+          Gérer et supprimer les séries
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </section>
+
+      <section class="card" aria-labelledby="backupTitle">
+        <h2 class="card-title" id="backupTitle">Sauvegarde</h2>
+        <div class="admin-actions">
+          <button type="button" class="btn" id="exportBtn">Exporter</button>
+          <button type="button" class="btn" id="importBtn">Importer</button>
+          <input type="file" id="importFile" accept="application/json,.json" hidden>
+        </div>
+        <p class="admin-note" id="importMsg" hidden></p>
+        <div class="admin-actions" id="importChoice" hidden>
+          <button type="button" class="btn" id="mergeBtn">Fusionner</button>
+          <button type="button" class="btn btn--danger" id="replaceBtn">Remplacer</button>
+          <button type="button" class="linklike" id="cancelImport">Annuler</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="resetTitle">
+        <h2 class="card-title" id="resetTitle">Réinitialisation</h2>
+        <button type="button" class="btn btn--danger btn--wide" id="resetBtn">Tout effacer</button>
+        <p class="admin-note">Les données ne vivent que dans ce navigateur. Exporte avant d’effacer.</p>
+      </section>
+    </div>
+  </section>
 </main>
 
-<p class="toast" id="toast" role="status" aria-live="polite" hidden></p>
+<!-- ============ Page dédiée : toutes les séries ============ -->
+<section class="page" id="seriesPage" aria-labelledby="seriesTitle" hidden>
+  <header class="page-head">
+    <button type="button" class="icon-btn" id="seriesBack" aria-label="Retour à l’administration">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="page-head-text">
+      <h2 class="page-title" id="seriesTitle">Toutes les séries</h2>
+      <p class="page-sub" id="seriesCount"></p>
+    </div>
+  </header>
 
-<!-- Administration -->
-<div class="sheet" id="admin" role="dialog" aria-modal="true" aria-labelledby="adminTitle" hidden>
-  <div class="sheet-inner">
-
-    <header class="sheet-head">
-      <h2 class="card-title" id="adminTitle">Administration</h2>
-      <button type="button" class="icon-btn" id="closeAdmin" aria-label="Fermer l’administration">
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </button>
-    </header>
-
-    <section class="admin-block">
-      <h3 class="admin-title">Objectif quotidien</h3>
-      <div class="counter counter--small">
-        <button type="button" class="round-btn" id="goalDec" aria-label="Baisser l’objectif">−</button>
-        <input class="counter-input" id="goalInput" type="text" inputmode="numeric" pattern="[0-9]*"
-               autocomplete="off" maxlength="4" aria-label="Objectif quotidien">
-        <button type="button" class="round-btn" id="goalInc" aria-label="Monter l’objectif">+</button>
-      </div>
-    </section>
-
-    <section class="admin-block">
-      <h3 class="admin-title">Toutes les séries</h3>
-      <div class="log" id="log"></div>
-    </section>
-
-    <section class="admin-block">
-      <h3 class="admin-title">Sauvegarde</h3>
-      <div class="admin-actions">
-        <button type="button" class="btn" id="exportBtn">Exporter</button>
-        <button type="button" class="btn" id="importBtn">Importer</button>
-        <input type="file" id="importFile" accept="application/json,.json" hidden>
-      </div>
-      <p class="admin-note" id="importMsg" hidden></p>
-      <div class="admin-actions" id="importChoice" hidden>
-        <button type="button" class="btn" id="mergeBtn">Fusionner</button>
-        <button type="button" class="btn btn--danger" id="replaceBtn">Remplacer</button>
-        <button type="button" class="linklike" id="cancelImport">Annuler</button>
-      </div>
-    </section>
-
-    <section class="admin-block">
-      <h3 class="admin-title">Réinitialisation</h3>
-      <button type="button" class="btn btn--danger btn--wide" id="resetBtn">Tout effacer</button>
-      <p class="admin-note">Les données ne vivent que dans ce navigateur. Exporte avant d’effacer.</p>
-    </section>
+  <div class="page-body">
+    <div class="log" id="log"></div>
   </div>
-</div>
+</section>
+
+<p class="toast" id="toast" role="status" aria-live="polite" hidden></p>
 
 <script src="./app.js"></script>
 </body>

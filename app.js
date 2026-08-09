@@ -1,5 +1,5 @@
 /* Tractions — logique applicative.
-   Stockage local, agrégations jour/semaine/mois/année, rendu, administration. */
+   Stockage local, agrégations semaine/mois/année, rendu, administration. */
 
 (function () {
   'use strict';
@@ -10,7 +10,6 @@
   var MAX_GOAL = 9999;
 
   var SCOPES = {
-    day:   { count: 14, trend: 'vs hier' },
     week:  { count: 12, trend: 'vs semaine dernière' },
     month: { count: 12, trend: 'vs mois dernier' },
     year:  { count: 5,  trend: 'vs an dernier' }
@@ -49,10 +48,6 @@
     return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0 ? 366 : 365;
   }
 
-  function daysBetween(from, to) {
-    return Math.round((to.getTime() - from.getTime()) / 86400000);
-  }
-
   function isValidISO(v) {
     if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
     var d = fromISO(v);
@@ -63,6 +58,10 @@
 
   function longDate(iso) {
     return fromISO(iso).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long' });
+  }
+
+  function fullDate(iso) {
+    return fromISO(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   function shortDate(iso) {
@@ -76,6 +75,8 @@
   function uid() {
     return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
   }
+
+  function plural(n) { return n > 1 ? 's' : ''; }
 
   /* ------------------------------------------------------------- stockage */
 
@@ -183,6 +184,17 @@
     return state.sets.reduce(function (a, s) { return a + s.reps; }, 0);
   }
 
+  /* Meilleure série unique, toutes dates confondues. */
+  function bestSet() {
+    var best = null;
+    for (var i = 0; i < state.sets.length; i++) {
+      var s = state.sets[i];
+      if (best === null || s.reps > best.reps) best = s;
+    }
+    return best;
+  }
+
+  /* Meilleure journée, toutes dates confondues. */
   function bestDay() {
     var map = totalsByDate();
     var best = null;
@@ -190,6 +202,14 @@
       if (best === null || map[date] > best.reps) best = { date: date, reps: map[date] };
     }
     return best;
+  }
+
+  function firstDate() {
+    var first = null;
+    for (var i = 0; i < state.sets.length; i++) {
+      if (first === null || state.sets[i].date < first) first = state.sets[i].date;
+    }
+    return first;
   }
 
   /* Jours consécutifs avec au moins une série, en cours aujourd'hui ou hier. */
@@ -208,33 +228,21 @@
     return n;
   }
 
-  function bucketKey(scope, iso) {
-    if (scope === 'day') return iso;
-    if (scope === 'week') return isoOf(mondayOf(fromISO(iso)));
-    if (scope === 'month') return iso.slice(0, 7);
+  function bucketKey(name, iso) {
+    if (name === 'week') return isoOf(mondayOf(fromISO(iso)));
+    if (name === 'month') return iso.slice(0, 7);
     return iso.slice(0, 4);
   }
 
   /* Construit les seaux affichés pour un onglet, du plus ancien au plus récent. */
-  function buildBuckets(scope) {
+  function buildBuckets(name) {
     var today = new Date();
-    var n = SCOPES[scope].count;
+    var n = SCOPES[name].count;
     var goal = state.goal;
     var list = [];
     var i;
 
-    if (scope === 'day') {
-      for (i = n - 1; i >= 0; i--) {
-        var d = addDays(today, -i);
-        var iso = isoOf(d);
-        list.push({
-          key: iso,
-          axis: String(d.getDate()),
-          title: capitalize(longDate(iso)),
-          goalRef: goal
-        });
-      }
-    } else if (scope === 'week') {
+    if (name === 'week') {
       var monday = mondayOf(today);
       for (i = n - 1; i >= 0; i--) {
         var ws = addDays(monday, -7 * i);
@@ -246,7 +254,7 @@
           goalRef: goal * 7
         });
       }
-    } else if (scope === 'month') {
+    } else if (name === 'month') {
       for (i = n - 1; i >= 0; i--) {
         var mDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
         var y = mDate.getFullYear();
@@ -273,17 +281,15 @@
     var index = Object.create(null);
     for (i = 0; i < list.length; i++) {
       list[i].value = 0;
-      list[i].sets = 0;
       list[i].activeDays = Object.create(null);
       index[list[i].key] = list[i];
     }
 
     for (i = 0; i < state.sets.length; i++) {
       var s = state.sets[i];
-      var b = index[bucketKey(scope, s.date)];
+      var b = index[bucketKey(name, s.date)];
       if (!b) continue;
       b.value += s.reps;
-      b.sets++;
       b.activeDays[s.date] = true;
     }
 
@@ -309,20 +315,17 @@
     return { max: max * 1.12, goalRef: goalRef, showGoal: false };
   }
 
-  function windowStart(scope) {
-    var today = new Date();
-    if (scope === 'day') return addDays(today, -(SCOPES.day.count - 1));
-    if (scope === 'week') return addDays(mondayOf(today), -7 * (SCOPES.week.count - 1));
-    if (scope === 'month') return new Date(today.getFullYear(), today.getMonth() - (SCOPES.month.count - 1), 1);
-    return new Date(today.getFullYear() - (SCOPES.year.count - 1), 0, 1);
-  }
-
   /* ------------------------------------------------------------------ vues */
 
   function $(id) { return document.getElementById(id); }
 
   var el = {
-    cumul: $('cumulValue'),
+    navTabs: Array.prototype.slice.call(document.querySelectorAll('.mainnav-tab')),
+    views: {
+      add: $('view-add'),
+      stats: $('view-stats'),
+      admin: $('view-admin')
+    },
     stage: $('stage'),
     todayCount: $('todayCount'),
     goalEcho: $('goalEcho'),
@@ -340,15 +343,20 @@
     goalLine: $('goalLine'),
     goalLineTag: $('goalLineTag'),
     detail: $('detail'),
-    mAvg: $('mAvg'),
-    mBest: $('mBest'),
-    mBestSub: $('mBestSub'),
-    mStreak: $('mStreak'),
+    rSet: $('rSet'),
+    rSetSub: $('rSetSub'),
+    rDay: $('rDay'),
+    rDaySub: $('rDaySub'),
+    rTotal: $('rTotal'),
+    rTotalSub: $('rTotalSub'),
+    streakLine: $('streakLine'),
     toast: $('toast'),
-    admin: $('admin'),
-    openAdmin: $('openAdmin'),
-    closeAdmin: $('closeAdmin'),
     goalInput: $('goalInput'),
+    seriesSummary: $('seriesSummary'),
+    openSeries: $('openSeries'),
+    seriesPage: $('seriesPage'),
+    seriesBack: $('seriesBack'),
+    seriesCount: $('seriesCount'),
     log: $('log'),
     resetBtn: $('resetBtn'),
     exportBtn: $('exportBtn'),
@@ -361,7 +369,8 @@
     cancelImport: $('cancelImport')
   };
 
-  var scope = 'day';
+  var view = 'add';
+  var scope = 'week';
   var selected = null;       // clé du seau sélectionné dans le graphique
   var toastTimer = null;
   var resetArmed = false;
@@ -382,14 +391,14 @@
 
     el.todayCount.textContent = fmt(total);
     el.goalEcho.textContent = fmt(goal);
-    el.cumul.textContent = fmt(grandTotal());
 
     /* Le chiffre monte et franchit la barre : +52px sous la ligne, −52px au-dessus. */
     el.stage.style.setProperty('--lift', (52 - progress * 104).toFixed(1) + 'px');
-    el.stage.classList.toggle('is-done', goal > 0 && total >= goal);
 
     var done = goal > 0 && total >= goal;
+    el.stage.classList.toggle('is-done', done);
     el.dayState.classList.toggle('is-done', done);
+
     if (total === 0) {
       el.dayState.textContent = 'Rien aujourd’hui. Première série ?';
     } else if (!done) {
@@ -410,6 +419,27 @@
     }
   }
 
+  function renderRecords() {
+    var set = bestSet();
+    var day = bestDay();
+    var total = grandTotal();
+    var first = firstDate();
+
+    el.rSet.textContent = set ? fmt(set.reps) : '0';
+    el.rSetSub.textContent = set ? longDate(set.date) : '—';
+
+    el.rDay.textContent = day ? fmt(day.reps) : '0';
+    el.rDaySub.textContent = day ? longDate(day.date) : '—';
+
+    el.rTotal.textContent = fmt(total);
+    el.rTotalSub.textContent = first ? 'depuis le ' + fullDate(first) : '—';
+
+    var n = streak();
+    el.streakLine.textContent = n === 0
+      ? 'Aucun jour d’affilée pour l’instant.'
+      : n + ' jour' + plural(n) + ' d’affilée avec au moins une série.';
+  }
+
   function trendText(buckets) {
     var n = buckets.length;
     var cur = buckets[n - 1].value;
@@ -423,28 +453,21 @@
     if (pct === 0) return '<b>→ stable</b> ' + label;
     var arrow = pct > 0 ? '↑' : '↓';
     var cls = pct > 0 ? 'up' : 'down';
-    return '<b class="' + cls + '">' + arrow + ' ' + Math.abs(pct) + '\u00A0%</b> ' + label;
+    return '<b class="' + cls + '">' + arrow + ' ' + Math.abs(pct) + ' %</b> ' + label;
   }
 
   function detailText(bucket) {
-    var parts = [];
-    parts.push('<strong>' + bucket.title + '</strong>');
-    if (bucket.value === 0) {
-      parts.push('<em>aucune traction</em>');
-      return parts.join(' — ');
-    }
-    var body = fmt(bucket.value) + ' traction' + (bucket.value > 1 ? 's' : '');
-    if (scope === 'day') {
-      body += ' · ' + bucket.sets + ' série' + (bucket.sets > 1 ? 's' : '');
-    } else {
-      body += ' · ' + bucket.activeDayCount + ' jour' + (bucket.activeDayCount > 1 ? 's' : '') + ' actif' +
-              (bucket.activeDayCount > 1 ? 's' : '');
-    }
+    var head = '<strong>' + bucket.title + '</strong>';
+    if (bucket.value === 0) return head + ' — <em>aucune traction</em>';
+
+    var body = fmt(bucket.value) + ' traction' + plural(bucket.value) +
+      ' · ' + bucket.activeDayCount + ' jour' + plural(bucket.activeDayCount) +
+      ' actif' + plural(bucket.activeDayCount);
+
     if (bucket.goalRef > 0) {
-      body += ' · ' + Math.round(bucket.value / bucket.goalRef * 100) + '\u00A0% de l’objectif';
+      body += ' · ' + Math.round(bucket.value / bucket.goalRef * 100) + ' % de l’objectif';
     }
-    parts.push(body);
-    return parts.join(' — ');
+    return head + ' — ' + body;
   }
 
   function renderChart() {
@@ -496,25 +519,9 @@
       el.goalLine.hidden = true;
     }
 
-    var current = null;
-    for (i = 0; i < n; i++) if (buckets[i].key === selected) current = buckets[i];
-    el.detail.innerHTML = detailText(current);
-
-    renderMetrics(buckets);
-  }
-
-  function renderMetrics(buckets) {
-    var total = 0;
-    for (var i = 0; i < buckets.length; i++) total += buckets[i].value;
-
-    var elapsed = Math.max(1, daysBetween(windowStart(scope), new Date()) + 1);
-    el.mAvg.textContent = fmt(Math.round(total / elapsed));
-
-    var best = bestDay();
-    el.mBest.textContent = best ? fmt(best.reps) : '0';
-    el.mBestSub.textContent = best ? longDate(best.date) : '—';
-
-    el.mStreak.textContent = fmt(streak());
+    for (i = 0; i < n; i++) {
+      if (buckets[i].key === selected) el.detail.innerHTML = detailText(buckets[i]);
+    }
   }
 
   function renderEntry() {
@@ -526,13 +533,31 @@
     el.backToToday.hidden = el.date.value === todayISO();
   }
 
+  function renderAdmin() {
+    if (document.activeElement !== el.goalInput) el.goalInput.value = String(state.goal);
+    disarmReset();
+    el.resetBtn.disabled = state.sets.length === 0;
+
+    var n = state.sets.length;
+    var total = grandTotal();
+    el.seriesSummary.textContent = n === 0
+      ? 'Aucune série enregistrée.'
+      : n + ' série' + plural(n) + ' enregistrée' + plural(n) + ', ' + fmt(total) + ' tractions.';
+  }
+
+  /* Journal : groupé par date, du plus récent au plus ancien. */
   function renderLog() {
     el.log.textContent = '';
 
-    if (!state.sets.length) {
+    var n = state.sets.length;
+    el.seriesCount.textContent = n === 0
+      ? 'Rien à afficher'
+      : n + ' série' + plural(n) + ' · ' + fmt(grandTotal()) + ' tractions';
+
+    if (!n) {
       var empty = document.createElement('p');
       empty.className = 'log-empty';
-      empty.textContent = 'Aucune série enregistrée.';
+      empty.textContent = 'Aucune série enregistrée pour l’instant.';
       el.log.appendChild(empty);
       return;
     }
@@ -556,10 +581,10 @@
 
     for (var g = 0; g < groups.length; g++) {
       var group = groups[g];
-      var wrap = document.createElement('div');
+      var wrap = document.createElement('section');
       wrap.className = 'log-day';
 
-      var head = document.createElement('div');
+      var head = document.createElement('h3');
       head.className = 'log-day-head';
       var name = document.createElement('span');
       name.textContent = capitalize(longDate(group.date));
@@ -601,18 +626,13 @@
     }
   }
 
-  function renderAdmin() {
-    if (document.activeElement !== el.goalInput) el.goalInput.value = String(state.goal);
-    disarmReset();
-    el.resetBtn.disabled = state.sets.length === 0;
-    renderLog();
-  }
-
   function render() {
     renderToday();
+    renderRecords();
     renderChart();
     renderEntry();
-    if (!el.admin.hidden) renderAdmin();
+    renderAdmin();
+    if (!el.seriesPage.hidden) renderLog();
   }
 
   /* -------------------------------------------------------------- actions */
@@ -654,6 +674,7 @@
     state.sets = state.sets.filter(function (s) { return s.id !== id; });
     if (state.sets.length !== before) {
       commit();
+      renderLog();
       toast('Série supprimée.');
     }
   }
@@ -718,7 +739,7 @@
       }
       if (parsed.version !== undefined && Number(parsed.version) !== 1) {
         resetImport();
-        showBackupNote('Fichier invalide : version « ' + parsed.version +' » inconnue, version 1 attendue.', true);
+        showBackupNote('Fichier invalide : version « ' + parsed.version + ' » inconnue, version 1 attendue.', true);
         return;
       }
       if (!Array.isArray(parsed.sets)) {
@@ -737,11 +758,11 @@
       }
 
       pendingImport = { sets: result.sets, goal: normalizeGoal(parsed.goal) };
-      var msg = result.sets.length + ' série' + (result.sets.length > 1 ? 's' : '') + ' lue' +
-        (result.sets.length > 1 ? 's' : '') + ', objectif ' + pendingImport.goal + '.';
+      var msg = result.sets.length + ' série' + plural(result.sets.length) + ' lue' +
+        plural(result.sets.length) + ', objectif ' + pendingImport.goal + '.';
       if (result.rejected) {
-        msg += ' ' + result.rejected + ' entrée' + (result.rejected > 1 ? 's' : '') + ' ignorée' +
-          (result.rejected > 1 ? 's' : '') + ' (format invalide).';
+        msg += ' ' + result.rejected + ' entrée' + plural(result.rejected) + ' ignorée' +
+          plural(result.rejected) + ' (format invalide).';
       }
       msg += ' Fusionner ou remplacer ?';
       showBackupNote(msg, false);
@@ -770,7 +791,7 @@
 
     resetImport();
     showBackupNote(added
-      ? added + ' série' + (added > 1 ? 's' : '') + ' ajoutée' + (added > 1 ? 's' : '') + '.'
+      ? added + ' série' + plural(added) + ' ajoutée' + plural(added) + '.'
       : 'Rien à ajouter : ces séries sont déjà là.', false);
     commit();
   }
@@ -781,30 +802,46 @@
     state.sets = pendingImport.sets;
     state.goal = pendingImport.goal;
     resetImport();
-    showBackupNote('Historique remplacé : ' + count + ' série' + (count > 1 ? 's' : '') + '.', false);
+    showBackupNote('Historique remplacé : ' + count + ' série' + plural(count) + '.', false);
     commit();
   }
 
-  /* ------------------------------------------------------- administration */
+  /* ------------------------------------------------- navigation à 3 vues */
 
-  var lastFocus = null;
+  function activateView(i, focus) {
+    el.navTabs.forEach(function (t, k) {
+      var on = k === i;
+      t.classList.toggle('is-active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+    });
 
-  function openAdmin() {
-    lastFocus = document.activeElement;
-    el.admin.hidden = false;
-    document.body.style.overflow = 'hidden';
-    el.importMsg.hidden = true;
-    resetImport();
-    renderAdmin();
-    el.closeAdmin.focus();
+    view = el.navTabs[i].dataset.view;
+    for (var name in el.views) el.views[name].hidden = name !== view;
+    if (focus) el.navTabs[i].focus();
+    window.scrollTo(0, 0);
   }
 
-  function closeAdmin() {
-    el.admin.hidden = true;
-    document.body.style.overflow = '';
-    disarmReset();
-    resetImport();
-    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  /* --------------------------------- page dédiée : toutes les séries */
+
+  function syncRoute() {
+    var open = location.hash === '#series';
+    el.seriesPage.hidden = !open;
+    document.body.classList.toggle('is-locked', open);
+    if (open) {
+      renderLog();
+      el.seriesBack.focus();
+      window.scrollTo(0, 0);
+    }
+  }
+
+  function openSeriesPage() {
+    history.pushState({ series: true }, '', '#series');
+    syncRoute();
+  }
+
+  function closeSeriesPage() {
+    if (location.hash === '#series') history.back();
   }
 
   /* ------------------------------------------------------------ écouteurs */
@@ -849,13 +886,13 @@
     renderChart();
   });
 
-  el.tabs.forEach(function (tab, i) {
-    tab.addEventListener('click', function () { activateTab(i); });
+  el.navTabs.forEach(function (tab, i) {
+    tab.addEventListener('click', function () { activateView(i); });
     tab.addEventListener('keydown', function (e) {
       if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
       e.preventDefault();
       var step = e.key === 'ArrowRight' ? 1 : -1;
-      activateTab((i + step + el.tabs.length) % el.tabs.length, true);
+      activateView((i + step + el.navTabs.length) % el.navTabs.length, true);
     });
   });
 
@@ -873,11 +910,22 @@
     renderChart();
   }
 
-  el.openAdmin.addEventListener('click', openAdmin);
-  el.closeAdmin.addEventListener('click', closeAdmin);
+  el.tabs.forEach(function (tab, i) {
+    tab.addEventListener('click', function () { activateTab(i); });
+    tab.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      var step = e.key === 'ArrowRight' ? 1 : -1;
+      activateTab((i + step + el.tabs.length) % el.tabs.length, true);
+    });
+  });
+
+  el.openSeries.addEventListener('click', openSeriesPage);
+  el.seriesBack.addEventListener('click', closeSeriesPage);
+  window.addEventListener('popstate', syncRoute);
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && !el.admin.hidden) closeAdmin();
+    if (e.key === 'Escape' && !el.seriesPage.hidden) closeSeriesPage();
   });
 
   el.goalInput.addEventListener('input', function () {
@@ -902,7 +950,7 @@
       resetArmed = true;
       el.resetBtn.classList.add('is-armed');
       el.resetBtn.textContent = 'Confirmer : effacer ' + state.sets.length +
-        ' série' + (state.sets.length > 1 ? 's' : '');
+        ' série' + plural(state.sets.length);
       return;
     }
     state.sets = [];
@@ -931,6 +979,9 @@
   });
 
   /* ------------------------------------------------------------ démarrage */
+
+  /* Un lancement part toujours de l'écran d'ajout, jamais d'une page profonde. */
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
 
   var dayStamp = todayISO();
   el.date.max = dayStamp;

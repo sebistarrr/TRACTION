@@ -5,27 +5,38 @@ sur l’écran d’accueil d’un iPhone comme une vraie app.
 
 ## Ce que fait l’app
 
-- **Ajouter une série** : un nombre de tractions à une date. Compteur `−` / `+`, grand chiffre
-  éditable au clavier numérique, raccourcis 3 · 5 · 8 · 10 · 12 · 15 · 20. La date est
-  pré-remplie au jour du jour, modifiable pour rattraper une séance oubliée, jamais dans le futur.
-- **Écran principal** : le total du jour en très grand. Il monte et franchit physiquement une
-  barre de traction à mesure que l’objectif approche ; objectif franchi, la barre passe en ambre.
-  Les séries du jour s’affichent en pastilles.
-- **Évolution** en quatre onglets, avec histogramme, ligne d’objectif, variation vs la période
-  précédente et trois indicateurs (moyenne par jour, record, jours d’affilée) :
+Trois onglets : **Ajouter · Évolution · Administration**.
+
+### 1. Ajouter
+
+- Le total du jour en très grand. Il monte et franchit physiquement une barre de traction à
+  mesure que l’objectif approche ; objectif franchi, la barre passe en ambre.
+- Compteur `−` / `+`, grand chiffre éditable au clavier numérique, raccourcis **2 · 4 · 6 · 8 · 10 · 12**.
+- Date pré-remplie au jour du jour, modifiable pour rattraper une séance oubliée, jamais dans le futur.
+- Les séries du jour s’affichent en pastilles.
+
+### 2. Évolution
+
+- Trois records, en grand : **record sur une série**, **record sur une journée**, **total tractions**,
+  chacun avec sa date. Suivis du nombre de jours d’affilée.
+- Histogramme sur trois échelles, avec ligne d’objectif, variation vs la période précédente et
+  légende détaillée au clic sur une barre :
 
   | Onglet  | Fenêtre affichée                     | Objectif de référence          |
   |---------|--------------------------------------|--------------------------------|
-  | Jour    | 14 derniers jours                    | objectif quotidien             |
   | Semaine | 12 dernières semaines (lundi → dim.) | objectif × 7                   |
   | Mois    | 12 derniers mois                     | objectif × nb de jours du mois |
   | Année   | 5 dernières années                   | objectif × nb de jours de l’an |
 
-  Chaque barre est cliquable et détaille la période sous le graphique.
-- **Administration** (icône en haut à droite) : objectif quotidien, liste de toutes les séries
-  groupées par jour avec suppression unitaire, réinitialisation en deux temps, export et import
-  d’un fichier `.json`.
-- **Hors ligne** : une fois la page chargée une première fois, l’app fonctionne sans réseau.
+### 3. Administration
+
+- Objectif quotidien.
+- **Séries enregistrées** : un bouton ouvre une page dédiée listant toutes les séries, rangées
+  par date du plus récent au plus ancien, avec l’heure et la suppression unitaire. Le bouton
+  retour du navigateur referme la page.
+- Export et import d’un fichier `.json`, réinitialisation totale en deux temps.
+
+**Hors ligne** : une fois la page chargée une première fois, l’app fonctionne sans réseau.
 
 Aucun backend, aucun tracking, aucune requête au runtime. Tout tient dans `localStorage`.
 
