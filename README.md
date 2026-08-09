@@ -47,6 +47,15 @@ polices sont tous appelés en chemins relatifs.
 
 ## Déployer sur GitHub Pages
 
+### Automatiquement (ce dépôt)
+
+`.github/workflows/pages.yml` déploie le site à chaque poussée sur la branche par défaut :
+il assemble `index.html`, `styles.css`, `app.js`, `sw.js`, le manifeste, `icons/` et `fonts/`
+dans un artefact, active Pages si besoin et publie. L’URL apparaît dans le résumé du run
+(onglet **Actions**) et dans **Settings → Pages**.
+
+### À la main, depuis un dépôt neuf
+
 1. Crée un dépôt public sur GitHub, par exemple `tractions`.
 2. Place les fichiers **à la racine** du dépôt (pas dans un sous-dossier) et pousse sur `main` :
 
