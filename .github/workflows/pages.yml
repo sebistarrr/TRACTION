@@ -25,10 +25,10 @@ jobs:
       - name: Récupérer le dépôt
         uses: actions/checkout@v4
 
+      # Pages doit être activé une fois dans Settings → Pages, source « GitHub Actions » :
+      # le jeton d'Actions peut publier, pas créer le site.
       - name: Configurer Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Rassembler le site
         run: |

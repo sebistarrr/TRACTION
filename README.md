@@ -51,8 +51,12 @@ polices sont tous appelés en chemins relatifs.
 
 `.github/workflows/pages.yml` déploie le site à chaque poussée sur la branche par défaut :
 il assemble `index.html`, `styles.css`, `app.js`, `sw.js`, le manifeste, `icons/` et `fonts/`
-dans un artefact, active Pages si besoin et publie. L’URL apparaît dans le résumé du run
-(onglet **Actions**) et dans **Settings → Pages**.
+dans un artefact, puis publie. L’URL apparaît dans le résumé du run (onglet **Actions**) et
+dans **Settings → Pages**.
+
+Une activation manuelle est nécessaire **une seule fois**, le jeton d’Actions pouvant publier
+mais pas créer le site : **Settings → Pages → Source → GitHub Actions**. Ensuite, tout est
+automatique.
 
 ### À la main, depuis un dépôt neuf
 
