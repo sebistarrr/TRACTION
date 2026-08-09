@@ -212,22 +212,6 @@
     return first;
   }
 
-  /* Jours consécutifs avec au moins une série, en cours aujourd'hui ou hier. */
-  function streak() {
-    var map = totalsByDate();
-    var cursor = new Date();
-    if (!map[isoOf(cursor)]) {
-      cursor = addDays(cursor, -1);
-      if (!map[isoOf(cursor)]) return 0;
-    }
-    var n = 0;
-    while (map[isoOf(cursor)]) {
-      n++;
-      cursor = addDays(cursor, -1);
-    }
-    return n;
-  }
-
   function bucketKey(name, iso) {
     if (name === 'week') return isoOf(mondayOf(fromISO(iso)));
     if (name === 'month') return iso.slice(0, 7);
@@ -320,20 +304,18 @@
   function $(id) { return document.getElementById(id); }
 
   var el = {
-    navTabs: Array.prototype.slice.call(document.querySelectorAll('.mainnav-tab')),
+    navTabs: Array.prototype.slice.call(document.querySelectorAll('.navbtn')),
     views: {
-      add: $('view-add'),
+      training: $('view-training'),
+      record: $('view-record'),
       stats: $('view-stats'),
       admin: $('view-admin')
     },
     stage: $('stage'),
     todayCount: $('todayCount'),
-    goalEcho: $('goalEcho'),
     dayState: $('dayState'),
     todaySets: $('todaySets'),
     reps: $('repsInput'),
-    date: $('dateInput'),
-    backToToday: $('backToToday'),
     shortcuts: $('shortcuts'),
     tabs: Array.prototype.slice.call(document.querySelectorAll('.tab')),
     panel: $('panel'),
@@ -349,7 +331,6 @@
     rDaySub: $('rDaySub'),
     rTotal: $('rTotal'),
     rTotalSub: $('rTotalSub'),
-    streakLine: $('streakLine'),
     toast: $('toast'),
     goalInput: $('goalInput'),
     seriesSummary: $('seriesSummary'),
@@ -369,7 +350,7 @@
     cancelImport: $('cancelImport')
   };
 
-  var view = 'add';
+  var view = 'training';
   var scope = 'week';
   var selected = null;       // clé du seau sélectionné dans le graphique
   var toastTimer = null;
@@ -390,10 +371,11 @@
     var progress = goal > 0 ? clamp(total / goal, 0, 1) : 1;
 
     el.todayCount.textContent = fmt(total);
-    el.goalEcho.textContent = fmt(goal);
 
-    /* Le chiffre monte et franchit la barre : +52px sous la ligne, −52px au-dessus. */
-    el.stage.style.setProperty('--lift', (52 - progress * 104).toFixed(1) + 'px');
+    /* Le chiffre monte et franchit la barre. L'amplitude est fixée en CSS
+       (--amp), elle change avec la hauteur d'écran ; ici on ne passe que
+       l'avancement 0 → 1. */
+    el.stage.style.setProperty('--p', progress.toFixed(3));
 
     var done = goal > 0 && total >= goal;
     el.stage.classList.toggle('is-done', done);
@@ -409,12 +391,24 @@
       el.dayState.textContent = 'Objectif franchi, ' + fmt(total - goal) + ' en rab.';
     }
 
+    /* Une seule ligne de pastilles : les plus récentes, précédées d'un
+       compteur quand la journée en compte davantage. */
     el.todaySets.textContent = '';
     var list = setsFor(iso);
-    for (var i = 0; i < list.length; i++) {
-      var li = document.createElement('li');
+    var shown = list.slice(-5);
+    var hidden = list.length - shown.length;
+    var li;
+
+    if (hidden > 0) {
+      li = document.createElement('li');
+      li.className = 'pill pill--more';
+      li.textContent = '+' + hidden;
+      el.todaySets.appendChild(li);
+    }
+    for (var i = 0; i < shown.length; i++) {
+      li = document.createElement('li');
       li.className = 'pill';
-      li.textContent = fmt(list[i].reps);
+      li.textContent = fmt(shown[i].reps);
       el.todaySets.appendChild(li);
     }
   }
@@ -433,11 +427,6 @@
 
     el.rTotal.textContent = fmt(total);
     el.rTotalSub.textContent = first ? 'depuis le ' + fullDate(first) : '—';
-
-    var n = streak();
-    el.streakLine.textContent = n === 0
-      ? 'Aucun jour d’affilée pour l’instant.'
-      : n + ' jour' + plural(n) + ' d’affilée avec au moins une série.';
   }
 
   function trendText(buckets) {
@@ -530,7 +519,6 @@
     for (var i = 0; i < chips.length; i++) {
       chips[i].classList.toggle('is-active', chips[i].dataset.reps === value);
     }
-    el.backToToday.hidden = el.date.value === todayISO();
   }
 
   function renderAdmin() {
@@ -655,18 +643,10 @@
       return;
     }
 
-    var date = el.date.value;
-    if (!isValidISO(date) || date > todayISO()) {
-      date = todayISO();
-      el.date.value = date;
-    }
-
-    state.sets.push({ id: uid(), date: date, reps: reps, ts: Date.now() });
+    /* Une série est toujours celle du jour : pas de saisie rétroactive. */
+    state.sets.push({ id: uid(), date: todayISO(), reps: reps, ts: Date.now() });
     commit();
-
-    toast(date === todayISO()
-      ? 'Série enregistrée.'
-      : 'Série enregistrée le ' + longDate(date) + '.');
+    toast('Série enregistrée.');
   }
 
   function removeSet(id) {
@@ -864,19 +844,6 @@
     if (chip) setReps(Number(chip.dataset.reps));
   });
 
-  el.date.addEventListener('change', function () {
-    if (!isValidISO(el.date.value) || el.date.value > todayISO()) {
-      el.date.value = todayISO();
-      toast('Pas de saisie dans le futur.');
-    }
-    renderEntry();
-  });
-
-  el.backToToday.addEventListener('click', function () {
-    el.date.value = todayISO();
-    renderEntry();
-  });
-
   $('saveBtn').addEventListener('click', addSet);
 
   el.plot.addEventListener('click', function (e) {
@@ -984,8 +951,6 @@
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
 
   var dayStamp = todayISO();
-  el.date.max = dayStamp;
-  el.date.value = dayStamp;
   el.goalInput.value = String(state.goal);
   render();
 
@@ -993,9 +958,7 @@
   setInterval(function () {
     var now = todayISO();
     if (now === dayStamp) return;
-    if (el.date.value === dayStamp) el.date.value = now;
     dayStamp = now;
-    el.date.max = now;
     render();
   }, 60000);
 

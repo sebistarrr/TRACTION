@@ -5,30 +5,39 @@ sur l’écran d’accueil d’un iPhone comme une vraie app.
 
 ## Ce que fait l’app
 
-Trois onglets : **Ajouter · Évolution · Administration**.
+Quatre onglets, dans une barre figée en bas de l’écran :
+**Training · Record · Évolution · Administration**.
 
-### 1. Ajouter
+L’interface est figée à la taille de l’écran : la page ne défile pas, le zoom est désactivé
+et il n’y a aucun défilement latéral. Seul le contenu d’un onglet défile verticalement, et
+uniquement quand il dépasse.
 
-- Le total du jour en très grand. Il monte et franchit physiquement une barre de traction à
-  mesure que l’objectif approche ; objectif franchi, la barre passe en ambre.
-- Compteur `−` / `+`, grand chiffre éditable au clavier numérique, raccourcis **2 · 4 · 6 · 8 · 10 · 12**.
-- Date pré-remplie au jour du jour, modifiable pour rattraper une séance oubliée, jamais dans le futur.
-- Les séries du jour s’affichent en pastilles.
+### 1. Training
 
-### 2. Évolution
+- Le total du jour en grand. Il monte et franchit physiquement une barre de traction à mesure
+  que l’objectif approche ; objectif franchi, la barre passe en ambre.
+- Compteur `−` / `+`, chiffre éditable au clavier numérique, raccourcis **2 · 4 · 6 · 8 · 10 · 12**.
+- Une série est toujours enregistrée **au jour du jour** : pas de saisie rétroactive.
+- Les séries du jour s’affichent en pastilles, sur une seule ligne.
+- Le bloc tient dans l’écran sans défiler, y compris sur un iPhone SE (375 × 667).
 
-- Trois records, en grand : **record sur une série**, **record sur une journée**, **total tractions**,
-  chacun avec sa date. Suivis du nombre de jours d’affilée.
-- Histogramme sur trois échelles, avec ligne d’objectif, variation vs la période précédente et
-  légende détaillée au clic sur une barre :
+### 2. Record
 
-  | Onglet  | Fenêtre affichée                     | Objectif de référence          |
-  |---------|--------------------------------------|--------------------------------|
-  | Semaine | 12 dernières semaines (lundi → dim.) | objectif × 7                   |
-  | Mois    | 12 derniers mois                     | objectif × nb de jours du mois |
-  | Année   | 5 dernières années                   | objectif × nb de jours de l’an |
+Trois records, en grand, chacun avec sa date : **record sur une série**,
+**record sur une journée**, **total tractions**.
 
-### 3. Administration
+### 3. Évolution
+
+Histogramme sur trois échelles, avec ligne d’objectif, variation vs la période précédente et
+légende détaillée au clic sur une barre :
+
+| Onglet  | Fenêtre affichée                     | Objectif de référence          |
+|---------|--------------------------------------|--------------------------------|
+| Semaine | 12 dernières semaines (lundi → dim.) | objectif × 7                   |
+| Mois    | 12 derniers mois                     | objectif × nb de jours du mois |
+| Année   | 5 dernières années                   | objectif × nb de jours de l’an |
+
+### 4. Administration
 
 - Objectif quotidien.
 - **Séries enregistrées** : un bouton ouvre une page dédiée listant toutes les séries, rangées
