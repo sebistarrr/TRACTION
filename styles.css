@@ -312,9 +312,9 @@ button, input { font: inherit; color: inherit; }
 /* Petit écran : tout se resserre pour que Training tienne sans défiler,
    ligne de charge comprise. */
 @media (max-height: 699px) {
-  .layout { gap: 10px; padding-top: 10px; padding-bottom: 12px; }
-  .hero, .entry { padding: 12px 14px 14px; }
-  .stage { height: 92px; --amp: 24px; }
+  .layout { gap: 10px; padding-top: 8px; padding-bottom: 10px; }
+  .hero, .entry { padding: 12px 14px 12px; }
+  .stage { height: 86px; --amp: 24px; }
   .stage-count { font-size: clamp(42px, 13vw, 60px); }
   .hero-state { margin-top: 6px; font-size: 14px; }
   .counter { margin: 8px 0 2px; }
@@ -366,12 +366,13 @@ button, input { font: inherit; color: inherit; }
 .hero-state { margin-top: 8px; font-size: 15px; }
 .hero-state.is-done { color: var(--flare); }
 
-.pills { display: flex; flex-wrap: nowrap; gap: 6px; margin-top: 8px; overflow: hidden; }
+.pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
 .pill {
   font-family: var(--mono);
   flex: none;
-  font-size: 13px;
-  padding: 5px 10px;
+  font-size: 12.5px;
+  line-height: 1.25;
+  padding: 4px 9px;
   border: 1px solid rgba(255, 122, 47, .42);
   border-radius: 999px;
   background: rgba(255, 122, 47, .09);
@@ -1028,7 +1029,6 @@ body.is-locked { overflow: hidden; }
   }
 }
 
-.pill--more { border-color: var(--steel); background: none; color: var(--haze); }
 .pill-kg {
   margin-left: 4px;
   font-size: 10.5px;

@@ -421,28 +421,19 @@
       el.dayState.textContent = 'Objectif franchi, ' + fmt(total - goal) + ' en rab.';
     }
 
-    /* Une seule ligne de pastilles : les plus récentes, précédées d'un
-       compteur quand la journée en compte davantage. */
+    /* Toutes les séries de la journée, dans l'ordre, sur autant de lignes
+       qu'il en faut. */
     el.todaySets.textContent = '';
     var list = setsFor(iso);
-    var shown = list.slice(-4);
-    var hidden = list.length - shown.length;
-    var li;
 
-    if (hidden > 0) {
-      li = document.createElement('li');
-      li.className = 'pill pill--more';
-      li.textContent = '+' + hidden;
-      el.todaySets.appendChild(li);
-    }
-    for (var i = 0; i < shown.length; i++) {
-      li = document.createElement('li');
-      li.className = shown[i].id === freshPillId ? 'pill pill--new' : 'pill';
-      li.textContent = fmt(shown[i].reps);
-      if (shown[i].kg > 0) {
+    for (var i = 0; i < list.length; i++) {
+      var li = document.createElement('li');
+      li.className = list[i].id === freshPillId ? 'pill pill--new' : 'pill';
+      li.textContent = fmt(list[i].reps);
+      if (list[i].kg > 0) {
         var kg = document.createElement('span');
         kg.className = 'pill-kg';
-        kg.textContent = '+' + shown[i].kg;
+        kg.textContent = '+' + list[i].kg;
         li.appendChild(kg);
       }
       el.todaySets.appendChild(li);

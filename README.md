@@ -24,12 +24,14 @@ uniquement quand il dépasse.
   s’envole en orange ; franchir l’objectif déclenche une pulsation ambre. Tout se tait si
   l’appareil demande moins d’animations.
 - Une série est toujours enregistrée **au jour du jour** : pas de saisie rétroactive.
-- Les séries du jour s’affichent en pastilles, sur une seule ligne.
+- **Toutes les séries du jour** s’affichent en pastilles, dans l’ordre, sur autant de lignes
+  qu’il en faut, charge comprise.
 - Le bloc tient dans l’écran sans défiler, du plus petit au plus grand.
 
 L’app se cale sur trois paliers de hauteur d’écran : compact sous 700 pt (iPhone SE),
 intermédiaire entre 700 et 820, et généreux au-delà — scène, chiffres, boutons et onglets
-grandissent d’un cran. Vérifié aux dimensions réelles de l’iPhone SE (375 × 667),
+grandissent d’un cran. Une journée chargée reste sans défilement : 20 séries sur iPhone 16 Pro,
+16 sur iPhone SE. Au-delà, l’écran défile normalement. Vérifié aux dimensions réelles de l’iPhone SE (375 × 667),
 16 (393 × 852), **16 Pro (402 × 874)** et 16 Pro Max (440 × 956), zones de sécurité
 comprises : 59 pt de Dynamic Island en haut, 34 pt d’indicateur d’accueil en bas.
 
