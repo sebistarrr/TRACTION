@@ -1176,6 +1176,19 @@
     showBackupNote('Import annulé.', false);
   });
 
+  /* La hauteur de la coque colle à celle que le navigateur déclare. innerHeight
+     ne bouge pas quand le clavier s'ouvre sur iOS, contrairement au viewport
+     visuel : l'app ne saute donc pas pendant la saisie. */
+  function fitApp() {
+    var h = window.innerHeight;
+    if (h > 0) document.documentElement.style.setProperty('--app-h', h + 'px');
+  }
+
+  fitApp();
+  window.addEventListener('resize', fitApp);
+  window.addEventListener('orientationchange', fitApp);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', fitApp);
+
   /* ------------------------------------------------------------ démarrage */
 
   /* Un lancement part toujours de l'écran d'ajout, jamais d'une page profonde. */
