@@ -1,5 +1,5 @@
 /* Tractions — logique applicative.
-   Stockage local, agrégations semaine/mois/année, rendu, administration. */
+   Stockage local, agrégations jour/mois/année, journal, rendu, administration. */
 
 (function () {
   'use strict';
@@ -10,8 +10,9 @@
   var MAX_GOAL = 9999;
 
   var SCOPES = {
-    week:  { count: 12, trend: 'vs semaine dernière' },
-    month: { count: 12, trend: 'vs mois dernier' },
+    d7:    { count: 7,  trend: 'vs hier',          daily: true },
+    d30:   { count: 30, trend: 'vs hier',          daily: true, dense: true },
+    month: { count: 12, trend: 'vs mois dernier',  dense: true },
     year:  { count: 5,  trend: 'vs an dernier' }
   };
 
@@ -37,11 +38,6 @@
     return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
   }
 
-  function mondayOf(d) {
-    var shift = (d.getDay() + 6) % 7;
-    return addDays(d, -shift);
-  }
-
   function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
 
   function daysInYear(y) {
@@ -62,10 +58,6 @@
 
   function fullDate(iso) {
     return fromISO(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-  }
-
-  function shortDate(iso) {
-    return fromISO(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
   }
 
   function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -213,7 +205,7 @@
   }
 
   function bucketKey(name, iso) {
-    if (name === 'week') return isoOf(mondayOf(fromISO(iso)));
+    if (SCOPES[name].daily) return iso;
     if (name === 'month') return iso.slice(0, 7);
     return iso.slice(0, 4);
   }
@@ -226,16 +218,19 @@
     var list = [];
     var i;
 
-    if (name === 'week') {
-      var monday = mondayOf(today);
+    if (SCOPES[name].daily) {
+      /* Échelle journalière : l'objectif de référence est le même chaque jour,
+         d'où une ligne d'objectif parfaitement horizontale. */
       for (i = n - 1; i >= 0; i--) {
-        var ws = addDays(monday, -7 * i);
-        var we = addDays(ws, 6);
+        var d = addDays(today, -i);
+        var iso = isoOf(d);
         list.push({
-          key: isoOf(ws),
-          axis: ws.getDate() + '/' + (ws.getMonth() + 1),
-          title: 'Semaine du ' + shortDate(isoOf(ws)) + ' au ' + shortDate(isoOf(we)),
-          goalRef: goal * 7
+          key: iso,
+          axis: n <= 7
+            ? d.toLocaleDateString('fr-FR', { weekday: 'narrow' }) + ' ' + d.getDate()
+            : String(d.getDate()),
+          title: capitalize(longDate(iso)),
+          goalRef: goal
         });
       }
     } else if (name === 'month') {
@@ -265,6 +260,7 @@
     var index = Object.create(null);
     for (i = 0; i < list.length; i++) {
       list[i].value = 0;
+      list[i].sets = 0;
       list[i].activeDays = Object.create(null);
       index[list[i].key] = list[i];
     }
@@ -274,6 +270,7 @@
       var b = index[bucketKey(name, s.date)];
       if (!b) continue;
       b.value += s.reps;
+      b.sets++;
       b.activeDays[s.date] = true;
     }
 
@@ -287,16 +284,23 @@
 
   /* Échelle du graphique : la ligne d'objectif ne s'affiche que si elle
      n'écrase pas les barres réelles. */
-  function scaleFor(buckets) {
+  /* Le dégagement au-dessus des barres laisse la place au nombre affiché. */
+  var HEADROOM = 1.24;
+
+  function scaleFor(name, buckets) {
     var max = 0;
     for (var i = 0; i < buckets.length; i++) max = Math.max(max, buckets[i].value);
     var goalRef = buckets[buckets.length - 1].goalRef;
 
-    if (max === 0) return { max: Math.max(goalRef, 1) * 1.12, goalRef: goalRef, showGoal: goalRef > 0 };
-    if (goalRef > 0 && goalRef <= max * 1.6) {
-      return { max: Math.max(max, goalRef) * 1.12, goalRef: goalRef, showGoal: true };
+    /* En journalier, l'objectif quotidien est toujours tracé : c'est le repère. */
+    if (SCOPES[name].daily) {
+      return { max: Math.max(max, goalRef, 1) * HEADROOM, goalRef: goalRef, showGoal: goalRef > 0 };
     }
-    return { max: max * 1.12, goalRef: goalRef, showGoal: false };
+    if (max === 0) return { max: Math.max(goalRef, 1) * HEADROOM, goalRef: goalRef, showGoal: goalRef > 0 };
+    if (goalRef > 0 && goalRef <= max * 1.6) {
+      return { max: Math.max(max, goalRef) * HEADROOM, goalRef: goalRef, showGoal: true };
+    }
+    return { max: max * HEADROOM, goalRef: goalRef, showGoal: false };
   }
 
   /* ------------------------------------------------------------------ vues */
@@ -308,6 +312,7 @@
     views: {
       training: $('view-training'),
       record: $('view-record'),
+      journal: $('view-journal'),
       stats: $('view-stats'),
       admin: $('view-admin')
     },
@@ -320,6 +325,9 @@
     tabs: Array.prototype.slice.call(document.querySelectorAll('.tab')),
     panel: $('panel'),
     trend: $('trend'),
+    chart: document.querySelector('.chart'),
+    journal: $('journal'),
+    journalSummary: $('journalSummary'),
     plot: $('chartPlot'),
     axis: $('chartAxis'),
     goalLine: $('goalLine'),
@@ -351,7 +359,7 @@
   };
 
   var view = 'training';
-  var scope = 'week';
+  var scope = 'd7';
   var selected = null;       // clé du seau sélectionné dans le graphique
   var toastTimer = null;
   var resetArmed = false;
@@ -455,9 +463,12 @@
     var head = '<strong>' + bucket.title + '</strong>';
     if (bucket.value === 0) return head + ' — <em>aucune traction</em>';
 
-    var body = fmt(bucket.value) + ' traction' + plural(bucket.value) +
-      ' · ' + bucket.activeDayCount + ' jour' + plural(bucket.activeDayCount) +
-      ' actif' + plural(bucket.activeDayCount);
+    /* Une journée se décrit par ses séries, une période par ses jours actifs. */
+    var body = fmt(bucket.value) + ' traction' + plural(bucket.value) + ' · ';
+    body += SCOPES[scope].daily
+      ? bucket.sets + ' série' + plural(bucket.sets)
+      : bucket.activeDayCount + ' jour' + plural(bucket.activeDayCount) +
+        ' actif' + plural(bucket.activeDayCount);
 
     if (bucket.goalRef > 0) {
       body += ' · ' + Math.round(bucket.value / bucket.goalRef * 100) + ' % de l’objectif';
@@ -467,9 +478,12 @@
 
   function renderChart() {
     var buckets = buildBuckets(scope);
-    var scale = scaleFor(buckets);
+    var scale = scaleFor(scope, buckets);
+    var dense = !!SCOPES[scope].dense;
     var n = buckets.length;
     var i;
+
+    el.chart.classList.toggle('is-dense', dense);
 
     if (!selected || !buckets.some(function (b) { return b.key === selected; })) {
       selected = buckets[n - 1].key;
@@ -493,15 +507,25 @@
       btn.dataset.key = b.key;
       btn.setAttribute('aria-label', b.title + ' : ' + fmt(b.value) + ' tractions');
 
+      btn.style.setProperty('--h', pct.toFixed(2) + '%');
+
+      /* Le nombre de tractions, au-dessus de sa barre. Les journées vides des
+         échelles denses restent muettes : un « 0 » répété n'apprend rien. */
+      if (b.value > 0 || !dense) {
+        var value = document.createElement('span');
+        value.className = 'bar-value';
+        value.textContent = fmt(b.value);
+        btn.appendChild(value);
+      }
+
       var fill = document.createElement('span');
       fill.className = 'bar-fill';
-      fill.style.height = pct.toFixed(2) + '%';
       btn.appendChild(fill);
       el.plot.appendChild(btn);
 
       /* Les libellés d'axe sont espacés quand ils risquent de se toucher. */
       var span = document.createElement('span');
-      var showLabel = scope !== 'week' || (n - 1 - i) % 2 === 0;
+      var showLabel = !dense || (n - 1 - i) % (scope === 'd30' ? 5 : 1) === 0;
       span.textContent = showLabel ? b.axis : '';
       el.axis.appendChild(span);
     }
@@ -516,6 +540,61 @@
 
     for (i = 0; i < n; i++) {
       if (buckets[i].key === selected) el.detail.innerHTML = detailText(buckets[i]);
+    }
+  }
+
+  /* Journal : uniquement les journées actives, séries puis total. */
+  function renderJournal() {
+    el.journal.textContent = '';
+
+    var days = [];
+    var byDate = Object.create(null);
+    var sorted = state.sets.slice().sort(function (a, b) {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return a.ts - b.ts;
+    });
+
+    for (var i = 0; i < sorted.length; i++) {
+      var s = sorted[i];
+      if (!byDate[s.date]) {
+        byDate[s.date] = { date: s.date, reps: [], total: 0 };
+        days.push(byDate[s.date]);
+      }
+      byDate[s.date].reps.push(s.reps);
+      byDate[s.date].total += s.reps;
+    }
+
+    el.journalSummary.textContent = days.length === 0
+      ? 'Aucune journée active.'
+      : days.length + ' journée' + plural(days.length) + ' active' + plural(days.length) +
+        ' · ' + fmt(grandTotal()) + ' tractions';
+
+    for (var d = 0; d < days.length; d++) {
+      var day = days[d];
+      var li = document.createElement('li');
+      li.className = day.total >= state.goal ? 'journal-day is-done' : 'journal-day';
+
+      var head = document.createElement('div');
+      head.className = 'journal-head';
+
+      var date = document.createElement('span');
+      date.className = 'journal-date';
+      date.textContent = capitalize(longDate(day.date));
+
+      var total = document.createElement('span');
+      total.className = 'journal-total';
+      total.textContent = fmt(day.total);
+
+      head.appendChild(date);
+      head.appendChild(total);
+
+      var reps = document.createElement('p');
+      reps.className = 'journal-reps';
+      reps.textContent = day.reps.join(' · ');
+
+      li.appendChild(head);
+      li.appendChild(reps);
+      el.journal.appendChild(li);
     }
   }
 
@@ -623,6 +702,7 @@
   function render() {
     renderToday();
     renderRecords();
+    renderJournal();
     renderChart();
     renderEntry();
     renderAdmin();

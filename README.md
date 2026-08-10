@@ -5,8 +5,8 @@ sur l’écran d’accueil d’un iPhone comme une vraie app.
 
 ## Ce que fait l’app
 
-Quatre onglets, dans une barre figée en bas de l’écran :
-**Training · Record · Évolution · Administration**.
+Cinq onglets, dans une barre figée en bas de l’écran :
+**Training · Record · Journal · Évolution · Admin**.
 
 L’interface est figée à la taille de l’écran : la page ne défile pas, le zoom est désactivé
 et il n’y a aucun défilement latéral. Seul le contenu d’un onglet défile verticalement, et
@@ -35,18 +35,29 @@ comprises : 59 pt de Dynamic Island en haut, 34 pt d’indicateur d’accueil en
 Trois records, en grand, chacun avec sa date : **record sur une série**,
 **record sur une journée**, **total tractions**.
 
-### 3. Évolution
+### 3. Journal
 
-Histogramme sur trois échelles, avec ligne d’objectif, variation vs la période précédente et
-légende détaillée au clic sur une barre :
+Uniquement les journées actives, de la plus récente à la plus ancienne : la date, les séries
+de la journée (`12 · 14 · 12`) et son total. Le total passe en ambre quand l’objectif du jour
+a été franchi.
 
-| Onglet  | Fenêtre affichée                     | Objectif de référence          |
-|---------|--------------------------------------|--------------------------------|
-| Semaine | 12 dernières semaines (lundi → dim.) | objectif × 7                   |
-| Mois    | 12 derniers mois                     | objectif × nb de jours du mois |
-| Année   | 5 dernières années                   | objectif × nb de jours de l’an |
+### 4. Évolution
 
-### 4. Administration
+Histogramme sur quatre échelles. **Chaque barre porte son nombre de tractions** — tourné d’un
+quart de tour sur les échelles denses pour rester lisible. Variation vs la période précédente
+et légende détaillée au clic sur une barre.
+
+| Échelle  | Fenêtre affichée      | Ligne d’objectif                        |
+|----------|-----------------------|-----------------------------------------|
+| 7 jours  | 7 derniers jours      | objectif quotidien, constante            |
+| 30 jours | 30 derniers jours     | objectif quotidien, constante            |
+| Mois     | 12 derniers mois      | objectif × nb de jours du mois           |
+| Année    | 5 dernières années    | objectif × nb de jours de l’an           |
+
+Sur les deux échelles journalières, la ligne d’objectif est toujours tracée : c’est le repère
+horizontal constant qui dit d’un coup d’œil quelles journées ont franchi la barre.
+
+### 5. Administration
 
 - Objectif quotidien.
 - **Séries enregistrées** : un bouton ouvre une page dédiée listant toutes les séries, rangées

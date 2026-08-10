@@ -99,19 +99,31 @@
       </div>
     </section>
 
-    <!-- ============ 3. Évolution ============ -->
+    <!-- ============ 3. Journal ============ -->
+    <section class="view" id="view-journal" role="tabpanel" aria-labelledby="nav-journal" tabindex="0" hidden>
+      <div class="layout">
+        <section class="card" aria-labelledby="journalTitle">
+          <h2 class="card-title" id="journalTitle">Journal</h2>
+          <p class="journal-summary" id="journalSummary">Aucune journée active.</p>
+          <ol class="journal" id="journal"></ol>
+        </section>
+      </div>
+    </section>
+
+    <!-- ============ 4. Évolution ============ -->
     <section class="view" id="view-stats" role="tabpanel" aria-labelledby="nav-stats" tabindex="0" hidden>
       <div class="layout">
         <section class="card stats" aria-labelledby="statsTitle">
           <h2 class="card-title" id="statsTitle">Évolution</h2>
 
           <div class="tabs" role="tablist" aria-label="Période affichée">
-            <button type="button" role="tab" class="tab is-active" id="tab-week"  aria-selected="true"  aria-controls="panel" data-scope="week">Semaine</button>
+            <button type="button" role="tab" class="tab is-active" id="tab-d7"    aria-selected="true"  aria-controls="panel" data-scope="d7">7 jours</button>
+            <button type="button" role="tab" class="tab"           id="tab-d30"   aria-selected="false" aria-controls="panel" data-scope="d30" tabindex="-1">30 jours</button>
             <button type="button" role="tab" class="tab"           id="tab-month" aria-selected="false" aria-controls="panel" data-scope="month" tabindex="-1">Mois</button>
             <button type="button" role="tab" class="tab"           id="tab-year"  aria-selected="false" aria-controls="panel" data-scope="year" tabindex="-1">Année</button>
           </div>
 
-          <div id="panel" role="tabpanel" aria-labelledby="tab-week" tabindex="0">
+          <div id="panel" role="tabpanel" aria-labelledby="tab-d7" tabindex="0">
             <p class="trend" id="trend"></p>
 
             <div class="chart">
@@ -129,7 +141,7 @@
       </div>
     </section>
 
-    <!-- ============ 4. Administration ============ -->
+    <!-- ============ 5. Administration ============ -->
     <section class="view" id="view-admin" role="tabpanel" aria-labelledby="nav-admin" tabindex="0" hidden>
       <div class="layout">
 
@@ -200,6 +212,15 @@
       <span>Record</span>
     </button>
 
+    <button type="button" role="tab" class="navbtn" id="nav-journal"
+            data-view="journal" aria-selected="false" aria-controls="view-journal" tabindex="-1">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M5 4h11l3 3v13H5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M8.5 10h7M8.5 13.5h7M8.5 17h4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      </svg>
+      <span>Journal</span>
+    </button>
+
     <button type="button" role="tab" class="navbtn" id="nav-stats"
             data-view="stats" aria-selected="false" aria-controls="view-stats" tabindex="-1">
       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -215,7 +236,7 @@
         <path d="M12 2.6l1.5 2.6 3-.4.6 3 2.7 1.4-1.4 2.7 1.4 2.7-2.7 1.4-.6 3-3-.4L12 21.4l-1.5-2.6-3 .4-.6-3-2.7-1.4L5.6 12 4.2 9.3l2.7-1.4.6-3 3 .4z"
               fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
       </svg>
-      <span>Administration</span>
+      <span>Admin</span>
     </button>
   </nav>
 </div>
