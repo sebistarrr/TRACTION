@@ -17,6 +17,9 @@ uniquement quand il dépasse.
 - Le total du jour en grand. Il monte et franchit physiquement une barre de traction à mesure
   que l’objectif approche ; objectif franchi, la barre passe en ambre.
 - Compteur `−` / `+`, chiffre éditable au clavier numérique, raccourcis **2 · 4 · 6 · 8 · 10 · 12**.
+- **Charge en kg** présélectionnable : **0 · 5 · 10 · 15 · 20 · 25 · 30**. La valeur choisie reste
+  d’une série à l’autre, le temps de la séance. Les séries lestées portent leur charge partout :
+  pastilles du jour, journal, record.
 - À l’enregistrement, le chiffre encaisse la charge, la barre fléchit et le nombre ajouté
   s’envole en orange ; franchir l’objectif déclenche une pulsation ambre. Tout se tait si
   l’appareil demande moins d’animations.
@@ -39,7 +42,13 @@ Trois records, en grand, chacun avec sa date : **record sur une série**,
 
 Uniquement les journées actives, de la plus récente à la plus ancienne : la date, les séries
 de la journée (`12 · 14 · 12`) et son total. Le total passe en ambre quand l’objectif du jour
-a été franchi.
+a été franchi. Quand toute la journée est lestée pareil, la charge est notée une seule fois
+(`12 · 14 · 12 · +10 kg`) ; sinon elle est précisée série par série.
+
+**Toucher une journée l’ouvre en édition** : chaque série y a son champ tractions et son champ
+charge, modifiables directement, avec suppression unitaire. Un bouton efface la journée entière,
+en deux temps. La date est dans l’adresse (`#jour=AAAA-MM-JJ`), le bouton retour du navigateur
+referme l’éditeur.
 
 ### 4. Évolution
 
@@ -65,10 +74,9 @@ entre périodes bien plus lisibles.
 ### 5. Administration
 
 - Objectif quotidien.
-- **Séries enregistrées** : un bouton ouvre une page dédiée listant toutes les séries, rangées
-  par date du plus récent au plus ancien, avec l’heure et la suppression unitaire. Le bouton
-  retour du navigateur referme la page.
 - Export et import d’un fichier `.json`, réinitialisation totale en deux temps.
+
+La gestion des séries se fait depuis le Journal, où elle a sa place naturelle : par date.
 
 **Hors ligne** : une fois la page chargée une première fois, l’app fonctionne sans réseau.
 
@@ -157,6 +165,10 @@ autre navigateur donne un historique vide.
 
 **Utilise régulièrement Administration → Exporter.** Le fichier `tractions-AAAA-MM-JJ.json`
 se réimporte tel quel, en fusion ou en remplacement.
+
+Le format d’export est en **version 2** : chaque série porte `id`, `date`, `reps`, `kg` et `ts`.
+Les fichiers de **version 1**, antérieurs à la charge, restent importables — leurs séries sont
+reprises à 0 kg, et l’import le dit.
 
 ## Structure
 

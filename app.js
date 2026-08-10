@@ -5,9 +5,11 @@
   'use strict';
 
   var KEY = 'tractions:v1';
+  var SCHEMA = 2;              /* v1 : sans charge — relu et converti en kg = 0 */
   var DEFAULT_GOAL = 50;
   var MAX_REPS = 999;
   var MAX_GOAL = 9999;
+  var MAX_KG = 200;
 
   var SCOPES = {
     d7:    { count: 7,  trend: 'vs hier',          daily: true },
@@ -70,6 +72,11 @@
 
   function plural(n) { return n > 1 ? 's' : ''; }
 
+  /* « 12 » à poids de corps, « 12 +10 kg » lesté. */
+  function setLabel(s) {
+    return fmt(s.reps) + (s.kg > 0 ? ' +' + s.kg + ' kg' : '');
+  }
+
   /* ------------------------------------------------------------- stockage */
 
   function normalizeSets(input) {
@@ -89,11 +96,16 @@
       var ts = Number(raw.ts);
       if (!isFinite(ts) || ts <= 0) ts = fromISO(raw.date).getTime();
 
+      /* Charge absente (fichier v1) ou illisible : poids du corps, soit 0. */
+      var kg = Math.floor(Number(raw.kg));
+      if (!isFinite(kg) || kg < 0) kg = 0;
+      if (kg > MAX_KG) kg = MAX_KG;
+
       var id = typeof raw.id === 'string' && raw.id ? raw.id : uid();
       if (seen[id]) { rejected++; continue; }
       seen[id] = true;
 
-      out.push({ id: id, date: raw.date, reps: reps, ts: ts });
+      out.push({ id: id, date: raw.date, reps: reps, kg: kg, ts: ts });
     }
 
     out.sort(function (a, b) {
@@ -111,7 +123,7 @@
 
   /* Lecture défensive : rien, JSON cassé ou schéma faux ⇒ état vide. */
   function load() {
-    var empty = { version: 1, goal: DEFAULT_GOAL, sets: [] };
+    var empty = { version: SCHEMA, goal: DEFAULT_GOAL, sets: [] };
     var raw;
     try { raw = localStorage.getItem(KEY); } catch (e) { return empty; }
     if (!raw) return empty;
@@ -121,7 +133,7 @@
     if (!parsed || typeof parsed !== 'object') return empty;
 
     return {
-      version: 1,
+      version: SCHEMA,
       goal: normalizeGoal(parsed.goal),
       sets: normalizeSets(parsed.sets).sets
     };
@@ -131,10 +143,10 @@
 
   function serialize() {
     return JSON.stringify({
-      version: 1,
+      version: SCHEMA,
       goal: state.goal,
       sets: state.sets.map(function (s) {
-        return { id: s.id, date: s.date, reps: s.reps, ts: s.ts };
+        return { id: s.id, date: s.date, reps: s.reps, kg: s.kg, ts: s.ts };
       })
     }, null, 2);
   }
@@ -323,6 +335,7 @@
     todaySets: $('todaySets'),
     reps: $('repsInput'),
     shortcuts: $('shortcuts'),
+    loadChips: $('loadChips'),
     tabs: Array.prototype.slice.call(document.querySelectorAll('.tab')),
     panel: $('panel'),
     trend: $('trend'),
@@ -342,12 +355,12 @@
     rTotalSub: $('rTotalSub'),
     toast: $('toast'),
     goalInput: $('goalInput'),
-    seriesSummary: $('seriesSummary'),
-    openSeries: $('openSeries'),
-    seriesPage: $('seriesPage'),
-    seriesBack: $('seriesBack'),
-    seriesCount: $('seriesCount'),
-    log: $('log'),
+    dayPage: $('dayPage'),
+    dayBack: $('dayBack'),
+    dayTitle: $('dayTitle'),
+    daySub: $('daySub'),
+    dayRows: $('dayRows'),
+    deleteDay: $('deleteDay'),
     resetBtn: $('resetBtn'),
     exportBtn: $('exportBtn'),
     importBtn: $('importBtn'),
@@ -367,6 +380,9 @@
   var pendingImport = null;
   var freshPillId = null;        // la pastille tout juste ajoutée, pour l'animer
   var celebrateTimer = null;
+  var loadKg = 0;                // charge sélectionnée, conservée d'une série à l'autre
+  var openDay = null;            // date de la journée en cours d'édition
+  var dayArmed = false;          // suppression de journée : premier appui
 
   var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -409,7 +425,7 @@
        compteur quand la journée en compte davantage. */
     el.todaySets.textContent = '';
     var list = setsFor(iso);
-    var shown = list.slice(-5);
+    var shown = list.slice(-4);
     var hidden = list.length - shown.length;
     var li;
 
@@ -423,6 +439,12 @@
       li = document.createElement('li');
       li.className = shown[i].id === freshPillId ? 'pill pill--new' : 'pill';
       li.textContent = fmt(shown[i].reps);
+      if (shown[i].kg > 0) {
+        var kg = document.createElement('span');
+        kg.className = 'pill-kg';
+        kg.textContent = '+' + shown[i].kg;
+        li.appendChild(kg);
+      }
       el.todaySets.appendChild(li);
     }
     freshPillId = null;
@@ -435,7 +457,9 @@
     var first = firstDate();
 
     el.rSet.textContent = set ? fmt(set.reps) : '0';
-    el.rSetSub.textContent = set ? longDate(set.date) : '—';
+    el.rSetSub.textContent = set
+      ? (set.kg > 0 ? '+' + set.kg + ' kg · ' : '') + longDate(set.date)
+      : '—';
 
     el.rDay.textContent = day ? fmt(day.reps) : '0';
     el.rDaySub.textContent = day ? longDate(day.date) : '—';
@@ -544,10 +568,8 @@
     }
   }
 
-  /* Journal : uniquement les journées actives, séries puis total. */
-  function renderJournal() {
-    el.journal.textContent = '';
-
+  /* Journées actives, de la plus récente à la plus ancienne. */
+  function activeDays() {
     var days = [];
     var byDate = Object.create(null);
     var sorted = state.sets.slice().sort(function (a, b) {
@@ -558,24 +580,50 @@
     for (var i = 0; i < sorted.length; i++) {
       var s = sorted[i];
       if (!byDate[s.date]) {
-        byDate[s.date] = { date: s.date, reps: [], total: 0 };
+        byDate[s.date] = { date: s.date, sets: [], total: 0 };
         days.push(byDate[s.date]);
       }
-      byDate[s.date].reps.push(s.reps);
+      byDate[s.date].sets.push(s);
       byDate[s.date].total += s.reps;
     }
+    return days;
+  }
 
+  /* « 12 · 14 · 12 » ; « 12 · 14 · 12 · +10 kg » quand toute la journée est
+     lestée pareil ; sinon la charge est notée série par série. */
+  function dayRepsLabel(day) {
+    var loads = day.sets.map(function (s) { return s.kg; });
+    var same = loads.every(function (k) { return k === loads[0]; });
+
+    if (same) {
+      var reps = day.sets.map(function (s) { return fmt(s.reps); }).join(' · ');
+      return loads[0] > 0 ? reps + ' · +' + loads[0] + ' kg' : reps;
+    }
+    return day.sets.map(setLabel).join(' · ');
+  }
+
+  /* Journal : uniquement les journées actives, séries puis total. */
+  function renderJournal() {
+    el.journal.textContent = '';
+
+    var days = activeDays();
     el.journalSummary.textContent = days.length === 0
       ? 'Aucune journée active.'
       : days.length + ' journée' + plural(days.length) + ' active' + plural(days.length) +
-        ' · ' + fmt(grandTotal()) + ' tractions';
+        ' · ' + fmt(grandTotal()) + ' tractions · touche une journée pour la modifier';
 
     for (var d = 0; d < days.length; d++) {
       var day = days[d];
-      var li = document.createElement('li');
-      li.className = day.total >= state.goal ? 'journal-day is-done' : 'journal-day';
 
-      var head = document.createElement('div');
+      var li = document.createElement('li');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = day.total >= state.goal ? 'journal-day is-done' : 'journal-day';
+      btn.dataset.day = day.date;
+      btn.setAttribute('aria-label',
+        'Modifier le ' + longDate(day.date) + ' : ' + fmt(day.total) + ' tractions');
+
+      var head = document.createElement('span');
       head.className = 'journal-head';
 
       var date = document.createElement('span');
@@ -589,21 +637,115 @@
       head.appendChild(date);
       head.appendChild(total);
 
-      var reps = document.createElement('p');
+      var reps = document.createElement('span');
       reps.className = 'journal-reps';
-      reps.textContent = day.reps.join(' · ');
+      reps.textContent = dayRepsLabel(day);
 
-      li.appendChild(head);
-      li.appendChild(reps);
+      btn.appendChild(head);
+      btn.appendChild(reps);
+      li.appendChild(btn);
       el.journal.appendChild(li);
     }
+  }
+
+  /* ------------------------------------------ édition d'une journée */
+
+  function renderDay() {
+    if (!openDay) return;
+
+    var sets = setsFor(openDay).sort(function (a, b) { return a.ts - b.ts; });
+    var total = totalFor(openDay);
+
+    el.dayTitle.textContent = capitalize(longDate(openDay));
+    el.daySub.textContent = sets.length === 0
+      ? 'Plus aucune série'
+      : sets.length + ' série' + plural(sets.length) + ' · ' + fmt(total) + ' tractions';
+
+    el.dayRows.textContent = '';
+    el.deleteDay.disabled = sets.length === 0;
+    disarmDay();
+
+    for (var i = 0; i < sets.length; i++) {
+      var s = sets[i];
+
+      var row = document.createElement('div');
+      row.className = 'day-row';
+
+      var time = document.createElement('span');
+      time.className = 'day-time';
+      time.textContent = new Date(s.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      row.appendChild(time);
+
+      row.appendChild(field('Tractions', 'reps', s.id, s.reps, 3));
+      row.appendChild(field('Charge kg', 'kg', s.id, s.kg, 3));
+
+      var del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'day-del';
+      del.dataset.del = s.id;
+      del.setAttribute('aria-label', 'Supprimer la série de ' + setLabel(s));
+      del.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+        '<path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12" fill="none" stroke="currentColor" ' +
+        'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      row.appendChild(del);
+
+      el.dayRows.appendChild(row);
+    }
+  }
+
+  function field(label, kind, id, value, maxlength) {
+    var wrap = document.createElement('label');
+    wrap.className = 'day-field';
+
+    var name = document.createElement('span');
+    name.textContent = label;
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.inputMode = 'numeric';
+    input.pattern = '[0-9]*';
+    input.autocomplete = 'off';
+    input.maxLength = maxlength;
+    input.value = String(value);
+    input.dataset.edit = kind;
+    input.dataset.id = id;
+
+    wrap.appendChild(name);
+    wrap.appendChild(input);
+    return wrap;
+  }
+
+  function editSet(id, kind, raw) {
+    var n = parseInt(raw, 10);
+    for (var i = 0; i < state.sets.length; i++) {
+      if (state.sets[i].id !== id) continue;
+      if (kind === 'reps') {
+        state.sets[i].reps = clamp(isFinite(n) ? n : 1, 1, MAX_REPS);
+      } else {
+        state.sets[i].kg = clamp(isFinite(n) ? n : 0, 0, MAX_KG);
+      }
+      commit();
+      return;
+    }
+  }
+
+  function disarmDay() {
+    dayArmed = false;
+    el.deleteDay.classList.remove('is-armed');
+    el.deleteDay.textContent = 'Supprimer la journée';
   }
 
   function renderEntry() {
     var value = el.reps.value;
     var chips = el.shortcuts.querySelectorAll('.chip');
-    for (var i = 0; i < chips.length; i++) {
+    var i;
+    for (i = 0; i < chips.length; i++) {
       chips[i].classList.toggle('is-active', chips[i].dataset.reps === value);
+    }
+
+    var loads = el.loadChips.querySelectorAll('.chip');
+    for (i = 0; i < loads.length; i++) {
+      loads[i].classList.toggle('is-active', Number(loads[i].dataset.kg) === loadKg);
     }
   }
 
@@ -611,93 +753,6 @@
     if (document.activeElement !== el.goalInput) el.goalInput.value = String(state.goal);
     disarmReset();
     el.resetBtn.disabled = state.sets.length === 0;
-
-    var n = state.sets.length;
-    var total = grandTotal();
-    el.seriesSummary.textContent = n === 0
-      ? 'Aucune série enregistrée.'
-      : n + ' série' + plural(n) + ' enregistrée' + plural(n) + ', ' + fmt(total) + ' tractions.';
-  }
-
-  /* Journal : groupé par date, du plus récent au plus ancien. */
-  function renderLog() {
-    el.log.textContent = '';
-
-    var n = state.sets.length;
-    el.seriesCount.textContent = n === 0
-      ? 'Rien à afficher'
-      : n + ' série' + plural(n) + ' · ' + fmt(grandTotal()) + ' tractions';
-
-    if (!n) {
-      var empty = document.createElement('p');
-      empty.className = 'log-empty';
-      empty.textContent = 'Aucune série enregistrée pour l’instant.';
-      el.log.appendChild(empty);
-      return;
-    }
-
-    var groups = [];
-    var byDate = Object.create(null);
-    var sorted = state.sets.slice().sort(function (a, b) {
-      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-      return a.ts - b.ts;
-    });
-
-    for (var i = 0; i < sorted.length; i++) {
-      var s = sorted[i];
-      if (!byDate[s.date]) {
-        byDate[s.date] = { date: s.date, items: [], total: 0 };
-        groups.push(byDate[s.date]);
-      }
-      byDate[s.date].items.push(s);
-      byDate[s.date].total += s.reps;
-    }
-
-    for (var g = 0; g < groups.length; g++) {
-      var group = groups[g];
-      var wrap = document.createElement('section');
-      wrap.className = 'log-day';
-
-      var head = document.createElement('h3');
-      head.className = 'log-day-head';
-      var name = document.createElement('span');
-      name.textContent = capitalize(longDate(group.date));
-      var tot = document.createElement('span');
-      tot.className = 'log-day-total';
-      tot.textContent = fmt(group.total);
-      head.appendChild(name);
-      head.appendChild(tot);
-      wrap.appendChild(head);
-
-      for (var k = 0; k < group.items.length; k++) {
-        var item = group.items[k];
-        var row = document.createElement('div');
-        row.className = 'log-row';
-
-        var time = document.createElement('span');
-        time.className = 'log-time';
-        time.textContent = new Date(item.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-
-        var reps = document.createElement('span');
-        reps.className = 'log-reps';
-        reps.textContent = fmt(item.reps) + ' tractions';
-
-        var del = document.createElement('button');
-        del.type = 'button';
-        del.className = 'log-del';
-        del.dataset.del = item.id;
-        del.setAttribute('aria-label', 'Supprimer la série de ' + item.reps + ' tractions du ' + longDate(item.date));
-        del.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
-          '<path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12" fill="none" stroke="currentColor" ' +
-          'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
-        row.appendChild(time);
-        row.appendChild(reps);
-        row.appendChild(del);
-        wrap.appendChild(row);
-      }
-      el.log.appendChild(wrap);
-    }
   }
 
   function render() {
@@ -707,7 +762,7 @@
     renderChart();
     renderEntry();
     renderAdmin();
-    if (!el.seriesPage.hidden) renderLog();
+    if (!el.dayPage.hidden) renderDay();
   }
 
   /* -------------------------------------------------------------- actions */
@@ -760,7 +815,7 @@
     /* Une série est toujours celle du jour : pas de saisie rétroactive. */
     var iso = todayISO();
     var before = totalFor(iso);
-    var set = { id: uid(), date: iso, reps: reps, ts: Date.now() };
+    var set = { id: uid(), date: iso, reps: reps, kg: loadKg, ts: Date.now() };
 
     state.sets.push(set);
     freshPillId = set.id;
@@ -768,7 +823,9 @@
 
     var crossed = state.goal > 0 && before < state.goal && before + reps >= state.goal;
     celebrate(reps, crossed);
-    toast(crossed ? 'Série enregistrée, objectif franchi !' : 'Série enregistrée.');
+    toast(crossed
+      ? 'Série enregistrée, objectif franchi !'
+      : 'Série enregistrée' + (loadKg > 0 ? ' à +' + loadKg + ' kg.' : '.'));
   }
 
   function removeSet(id) {
@@ -776,7 +833,6 @@
     state.sets = state.sets.filter(function (s) { return s.id !== id; });
     if (state.sets.length !== before) {
       commit();
-      renderLog();
       toast('Série supprimée.');
     }
   }
@@ -839,9 +895,12 @@
         showBackupNote('Fichier invalide : le contenu attendu est un objet JSON.', true);
         return;
       }
-      if (parsed.version !== undefined && Number(parsed.version) !== 1) {
+      /* Les fichiers d'avant la charge (version 1) restent lisibles. */
+      var fileVersion = parsed.version === undefined ? SCHEMA : Number(parsed.version);
+      if (!(fileVersion === 1 || fileVersion === SCHEMA)) {
         resetImport();
-        showBackupNote('Fichier invalide : version « ' + parsed.version + ' » inconnue, version 1 attendue.', true);
+        showBackupNote('Fichier invalide : version « ' + parsed.version + ' » inconnue, ' +
+          'versions 1 et ' + SCHEMA + ' acceptées.', true);
         return;
       }
       if (!Array.isArray(parsed.sets)) {
@@ -862,6 +921,7 @@
       pendingImport = { sets: result.sets, goal: normalizeGoal(parsed.goal) };
       var msg = result.sets.length + ' série' + plural(result.sets.length) + ' lue' +
         plural(result.sets.length) + ', objectif ' + pendingImport.goal + '.';
+      if (fileVersion === 1) msg += ' Fichier sans charge : les séries sont reprises à 0 kg.';
       if (result.rejected) {
         msg += ' ' + result.rejected + ' entrée' + plural(result.rejected) + ' ignorée' +
           plural(result.rejected) + ' (format invalide).';
@@ -924,26 +984,37 @@
     window.scrollTo(0, 0);
   }
 
-  /* --------------------------------- page dédiée : toutes les séries */
+  /* ----------------------------- page dédiée : une journée du journal */
+
+  /* L'adresse porte la date : le retour du navigateur referme l'éditeur. */
+  function dayFromHash() {
+    var m = /^#jour=(\d{4}-\d{2}-\d{2})$/.exec(location.hash);
+    return m && isValidISO(m[1]) ? m[1] : null;
+  }
 
   function syncRoute() {
-    var open = location.hash === '#series';
-    el.seriesPage.hidden = !open;
+    openDay = dayFromHash();
+    var open = openDay !== null && setsFor(openDay).length > 0;
+
+    el.dayPage.hidden = !open;
     document.body.classList.toggle('is-locked', open);
+
     if (open) {
-      renderLog();
-      el.seriesBack.focus();
+      renderDay();
+      el.dayBack.focus();
       window.scrollTo(0, 0);
+    } else {
+      openDay = null;
     }
   }
 
-  function openSeriesPage() {
-    history.pushState({ series: true }, '', '#series');
+  function openDayPage(date) {
+    history.pushState({ day: date }, '', '#jour=' + date);
     syncRoute();
   }
 
-  function closeSeriesPage() {
-    if (location.hash === '#series') history.back();
+  function closeDayPage() {
+    if (dayFromHash()) history.back();
   }
 
   /* ------------------------------------------------------------ écouteurs */
@@ -964,6 +1035,13 @@
   el.shortcuts.addEventListener('click', function (e) {
     var chip = e.target.closest('.chip');
     if (chip) setReps(Number(chip.dataset.reps));
+  });
+
+  el.loadChips.addEventListener('click', function (e) {
+    var chip = e.target.closest('.chip');
+    if (!chip) return;
+    loadKg = clamp(Number(chip.dataset.kg) || 0, 0, MAX_KG);
+    renderEntry();
   });
 
   $('saveBtn').addEventListener('click', addSet);
@@ -1009,12 +1087,56 @@
     });
   });
 
-  el.openSeries.addEventListener('click', openSeriesPage);
-  el.seriesBack.addEventListener('click', closeSeriesPage);
+  el.journal.addEventListener('click', function (e) {
+    var day = e.target.closest('[data-day]');
+    if (day) openDayPage(day.dataset.day);
+  });
+
+  el.dayBack.addEventListener('click', closeDayPage);
   window.addEventListener('popstate', syncRoute);
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && !el.seriesPage.hidden) closeSeriesPage();
+    if (e.key === 'Escape' && !el.dayPage.hidden) closeDayPage();
+  });
+
+  /* Modification directe dans les champs de la journée. */
+  el.dayRows.addEventListener('input', function (e) {
+    var input = e.target;
+    if (!input.dataset || !input.dataset.edit) return;
+    var cleaned = input.value.replace(/\D/g, '').slice(0, 3);
+    if (cleaned !== input.value) input.value = cleaned;
+  });
+
+  el.dayRows.addEventListener('change', function (e) {
+    var input = e.target;
+    if (input.dataset && input.dataset.edit) editSet(input.dataset.id, input.dataset.edit, input.value);
+  });
+
+  el.dayRows.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-del]');
+    if (!btn) return;
+    removeSet(btn.dataset.del);
+    if (setsFor(openDay).length === 0) closeDayPage();
+    else renderDay();
+  });
+
+  el.deleteDay.addEventListener('click', function () {
+    var sets = setsFor(openDay);
+    if (!sets.length) return;
+
+    if (!dayArmed) {
+      dayArmed = true;
+      el.deleteDay.classList.add('is-armed');
+      el.deleteDay.textContent = 'Confirmer : effacer ' + sets.length + ' série' + plural(sets.length);
+      return;
+    }
+
+    var gone = openDay;
+    state.sets = state.sets.filter(function (s) { return s.date !== gone; });
+    disarmDay();
+    commit();
+    closeDayPage();
+    toast('Journée supprimée.');
   });
 
   el.goalInput.addEventListener('input', function () {
@@ -1027,11 +1149,6 @@
 
   $('goalDec').addEventListener('click', function () { setGoal(state.goal - 5); });
   $('goalInc').addEventListener('click', function () { setGoal(state.goal + 5); });
-
-  el.log.addEventListener('click', function (e) {
-    var btn = e.target.closest('[data-del]');
-    if (btn) removeSet(btn.dataset.del);
-  });
 
   el.resetBtn.addEventListener('click', function () {
     if (!state.sets.length) return;
