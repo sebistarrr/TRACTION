@@ -870,14 +870,7 @@ button, input { font: inherit; color: inherit; }
 }
 .journal-day.is-done .journal-total { color: var(--flare); }
 
-.journal-reps {
-  display: block;
-  margin-top: 3px;
-  font-family: var(--mono);
-  font-size: 13px;
-  letter-spacing: .02em;
-  color: var(--haze);
-}
+.journal-pills { margin-top: 6px; }
 
 /* La liste part du haut, elle est faite pour défiler. */
 #view-journal .layout { align-content: start; }

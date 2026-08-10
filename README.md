@@ -42,10 +42,9 @@ Trois records, en grand, chacun avec sa date : **record sur une série**,
 
 ### 3. Journal
 
-Uniquement les journées actives, de la plus récente à la plus ancienne : la date, les séries
-de la journée (`12 · 14 · 12`) et son total. Le total passe en ambre quand l’objectif du jour
-a été franchi. Quand toute la journée est lestée pareil, la charge est notée une seule fois
-(`12 · 14 · 12 · +10 kg`) ; sinon elle est précisée série par série.
+Uniquement les journées actives, de la plus récente à la plus ancienne : la date, le total,
+et les séries en **étiquettes orange**, exactement celles de Training — une pastille par série,
+la charge accolée. Le total passe en ambre quand l’objectif du jour a été franchi.
 
 **Toucher une journée l’ouvre en édition** : chaque série y a son champ tractions et son champ
 charge, modifiables directement, avec suppression unitaire. Un bouton efface la journée entière,

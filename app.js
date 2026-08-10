@@ -580,19 +580,6 @@
     return days;
   }
 
-  /* « 12 · 14 · 12 » ; « 12 · 14 · 12 · +10 kg » quand toute la journée est
-     lestée pareil ; sinon la charge est notée série par série. */
-  function dayRepsLabel(day) {
-    var loads = day.sets.map(function (s) { return s.kg; });
-    var same = loads.every(function (k) { return k === loads[0]; });
-
-    if (same) {
-      var reps = day.sets.map(function (s) { return fmt(s.reps); }).join(' · ');
-      return loads[0] > 0 ? reps + ' · +' + loads[0] + ' kg' : reps;
-    }
-    return day.sets.map(setLabel).join(' · ');
-  }
-
   /* Journal : uniquement les journées actives, séries puis total. */
   function renderJournal() {
     el.journal.textContent = '';
@@ -611,8 +598,8 @@
       btn.type = 'button';
       btn.className = day.total >= state.goal ? 'journal-day is-done' : 'journal-day';
       btn.dataset.day = day.date;
-      btn.setAttribute('aria-label',
-        'Modifier le ' + longDate(day.date) + ' : ' + fmt(day.total) + ' tractions');
+      btn.setAttribute('aria-label', 'Modifier le ' + longDate(day.date) + ' : ' +
+        fmt(day.total) + ' tractions en ' + day.sets.length + ' série' + plural(day.sets.length));
 
       var head = document.createElement('span');
       head.className = 'journal-head';
@@ -628,12 +615,26 @@
       head.appendChild(date);
       head.appendChild(total);
 
-      var reps = document.createElement('span');
-      reps.className = 'journal-reps';
-      reps.textContent = dayRepsLabel(day);
+      /* Mêmes étiquettes que dans Training : une pastille par série,
+         la charge accolée. (Des <span> : un <ul> serait invalide dans un bouton.) */
+      var pills = document.createElement('span');
+      pills.className = 'pills journal-pills';
+
+      for (var k = 0; k < day.sets.length; k++) {
+        var pill = document.createElement('span');
+        pill.className = 'pill';
+        pill.textContent = fmt(day.sets[k].reps);
+        if (day.sets[k].kg > 0) {
+          var kg = document.createElement('span');
+          kg.className = 'pill-kg';
+          kg.textContent = '+' + day.sets[k].kg;
+          pill.appendChild(kg);
+        }
+        pills.appendChild(pill);
+      }
 
       btn.appendChild(head);
-      btn.appendChild(reps);
+      btn.appendChild(pills);
       li.appendChild(btn);
       el.journal.appendChild(li);
     }
