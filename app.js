@@ -296,11 +296,12 @@
     if (SCOPES[name].daily) {
       return { max: Math.max(max, goalRef, 1) * HEADROOM, goalRef: goalRef, showGoal: goalRef > 0 };
     }
-    if (max === 0) return { max: Math.max(goalRef, 1) * HEADROOM, goalRef: goalRef, showGoal: goalRef > 0 };
-    if (goalRef > 0 && goalRef <= max * 1.6) {
-      return { max: Math.max(max, goalRef) * HEADROOM, goalRef: goalRef, showGoal: true };
-    }
-    return { max: max * HEADROOM, goalRef: goalRef, showGoal: false };
+
+    /* Mois et année : pas de ligne d'objectif. Un objectif « quotidien × tous
+       les jours de la période » suppose de s'entraîner sans jamais manquer un
+       jour ; la ligne resterait loin au-dessus des barres sans rien apprendre.
+       L'échelle se cale donc sur le maximum réel. */
+    return { max: Math.max(max, 1) * HEADROOM, goalRef: goalRef, showGoal: false };
   }
 
   /* ------------------------------------------------------------------ vues */

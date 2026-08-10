@@ -47,15 +47,20 @@ Histogramme sur quatre échelles. **Chaque barre porte son nombre de tractions**
 quart de tour sur les échelles denses pour rester lisible. Variation vs la période précédente
 et légende détaillée au clic sur une barre.
 
-| Échelle  | Fenêtre affichée      | Ligne d’objectif                        |
-|----------|-----------------------|-----------------------------------------|
-| 7 jours  | 7 derniers jours      | objectif quotidien, constante            |
-| 30 jours | 30 derniers jours     | objectif quotidien, constante            |
-| Mois     | 12 derniers mois      | objectif × nb de jours du mois           |
-| Année    | 5 dernières années    | objectif × nb de jours de l’an           |
+| Échelle  | Fenêtre affichée   | Ligne d’objectif              |
+|----------|--------------------|-------------------------------|
+| 7 jours  | 7 derniers jours   | objectif quotidien, constante |
+| 30 jours | 30 derniers jours  | objectif quotidien, constante |
+| Mois     | 12 derniers mois   | aucune                        |
+| Année    | 5 dernières années | aucune                        |
 
 Sur les deux échelles journalières, la ligne d’objectif est toujours tracée : c’est le repère
 horizontal constant qui dit d’un coup d’œil quelles journées ont franchi la barre.
+
+Mois et année n’en portent pas. Un objectif « quotidien × tous les jours de la période »
+supposerait de s’entraîner sans jamais manquer un jour : la ligne resterait loin au-dessus des
+barres sans rien apprendre. L’échelle s’y cale sur le maximum réel, ce qui rend les écarts
+entre périodes bien plus lisibles.
 
 ### 5. Administration
 
