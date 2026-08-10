@@ -36,7 +36,7 @@
   --bar:   #B7CFD9;
 
   /* Accents : une couleur par section, jamais décoratives seules. */
-  --jade:  #3FD3A3;   /* Training, progression, action principale */
+  --orange:#FF7A2F;   /* Training, progression, action principale */
   --sky:   #4EC5E8;   /* Évolution, histogramme */
   --iris:  #9B8CF5;   /* Administration */
 
@@ -173,7 +173,7 @@ button, input { font: inherit; color: inherit; }
 .navbtn.is-active { background: var(--steel); color: var(--chalk); }
 .navbtn:hover { color: var(--chalk); }
 
-.navbtn[data-view="training"].is-active { color: var(--jade);  background: rgba(63, 211, 163, .15); }
+.navbtn[data-view="training"].is-active { color: var(--orange);  background: rgba(255, 122, 47, .16); }
 .navbtn[data-view="record"].is-active   { color: var(--flare); background: rgba(255, 176, 46, .15); }
 .navbtn[data-view="stats"].is-active    { color: var(--sky);   background: rgba(78, 197, 232, .15); }
 .navbtn[data-view="admin"].is-active    { color: var(--iris);  background: rgba(155, 140, 245, .15); }
@@ -237,7 +237,7 @@ button, input { font: inherit; color: inherit; }
   color: var(--haze);
 }
 
-#view-training .card-title { color: var(--jade); }
+#view-training .card-title { color: var(--orange); }
 #view-record   .card-title { color: var(--flare); }
 #view-stats    .card-title { color: var(--sky); }
 #view-admin    .card-title { color: var(--iris); }
@@ -320,10 +320,10 @@ button, input { font: inherit; color: inherit; }
   flex: none;
   font-size: 13px;
   padding: 5px 10px;
-  border: 1px solid rgba(63, 211, 163, .38);
+  border: 1px solid rgba(255, 122, 47, .42);
   border-radius: 999px;
-  background: rgba(63, 211, 163, .08);
-  color: #A6E8D0;
+  background: rgba(255, 122, 47, .09);
+  color: #FFC49B;
 }
 
 /* Célébration à l'enregistrement d'une série : le chiffre encaisse la charge,
@@ -338,7 +338,7 @@ button, input { font: inherit; color: inherit; }
 }
 @keyframes flex-bar {
   0%   { transform: scaleY(1); }
-  30%  { transform: scaleY(1.9); box-shadow: 0 0 24px rgba(63, 211, 163, .5); }
+  30%  { transform: scaleY(1.9); box-shadow: 0 0 24px rgba(255, 122, 47, .55); }
   100% { transform: scaleY(1); }
 }
 
@@ -350,7 +350,7 @@ button, input { font: inherit; color: inherit; }
   z-index: 4;
   font-family: var(--display);
   font-size: 27px;
-  color: var(--jade);
+  color: var(--orange);
   text-shadow: 0 2px 14px rgba(8, 21, 29, .8);
   pointer-events: none;
   animation: lift-off .85s cubic-bezier(.2, .7, .3, 1) forwards;
@@ -441,8 +441,8 @@ button, input { font: inherit; color: inherit; }
 }
 .chip:hover { border-color: var(--bar); }
 .chip.is-active {
-  background: rgba(63, 211, 163, .18);
-  border-color: var(--jade);
+  background: rgba(255, 122, 47, .18);
+  border-color: var(--orange);
   color: var(--chalk);
 }
 
@@ -464,8 +464,8 @@ button, input { font: inherit; color: inherit; }
   margin-top: 14px;
   border: 0;
   border-radius: var(--r-soft);
-  background: linear-gradient(118deg, var(--jade) 0%, #46CDD2 55%, var(--sky) 100%);
-  color: #05222B;
+  background: linear-gradient(118deg, var(--orange) 0%, #FF9526 55%, var(--flare) 100%);
+  color: #24120A;
   font-size: 17px;
   font-weight: 600;
   letter-spacing: .01em;
@@ -512,7 +512,7 @@ button, input { font: inherit; color: inherit; }
   color: var(--haze);
 }
 .trend b { font-size: 13px; font-weight: 500; }
-.trend .up { color: var(--jade); }
+.trend .up { color: var(--orange); }
 .trend .down { color: var(--haze); }
 
 .chart { margin-top: 22px; }
@@ -655,10 +655,10 @@ button, input { font: inherit; color: inherit; }
 }
 .record:nth-child(2) dt { color: var(--flare); }
 .record:nth-child(3) {
-  border-color: rgba(63, 211, 163, .45);
-  background: linear-gradient(180deg, rgba(63, 211, 163, .12), transparent 72%);
+  border-color: rgba(78, 197, 232, .45);
+  background: linear-gradient(180deg, rgba(78, 197, 232, .12), transparent 72%);
 }
-.record:nth-child(3) dt { color: var(--jade); }
+.record:nth-child(3) dt { color: var(--sky); }
 
 @media (min-width: 560px) {
   .records { grid-template-columns: repeat(3, minmax(0, 1fr)); }
