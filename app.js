@@ -356,6 +356,10 @@
   var toastTimer = null;
   var resetArmed = false;
   var pendingImport = null;
+  var freshPillId = null;        // la pastille tout juste ajoutée, pour l'animer
+  var celebrateTimer = null;
+
+  var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function toast(message) {
     el.toast.textContent = message;
@@ -379,6 +383,7 @@
 
     var done = goal > 0 && total >= goal;
     el.stage.classList.toggle('is-done', done);
+    el.stage.classList.toggle('is-close', !done && progress >= .6);
     el.dayState.classList.toggle('is-done', done);
 
     if (total === 0) {
@@ -407,10 +412,11 @@
     }
     for (var i = 0; i < shown.length; i++) {
       li = document.createElement('li');
-      li.className = 'pill';
+      li.className = shown[i].id === freshPillId ? 'pill pill--new' : 'pill';
       li.textContent = fmt(shown[i].reps);
       el.todaySets.appendChild(li);
     }
+    freshPillId = null;
   }
 
   function renderRecords() {
@@ -635,6 +641,33 @@
     renderEntry();
   }
 
+  /* Petite animation à l'enregistrement : le chiffre encaisse, la barre vibre,
+     le nombre ajouté s'envole. Silencieuse si l'appareil demande moins d'animations. */
+  function celebrate(reps, crossed) {
+    if (calm) return;
+
+    /* Deux séries enchaînées ne doivent pas empiler deux nombres. */
+    var previous = el.stage.querySelectorAll('.floater');
+    for (var i = 0; i < previous.length; i++) previous[i].remove();
+
+    var floater = document.createElement('span');
+    floater.className = 'floater';
+    floater.setAttribute('aria-hidden', 'true');
+    floater.textContent = '+' + fmt(reps);
+    el.stage.appendChild(floater);
+    setTimeout(function () { floater.remove(); }, 900);
+
+    el.stage.classList.remove('is-bumped', 'is-cheering');
+    void el.stage.offsetWidth;                       /* relance les animations */
+    el.stage.classList.add('is-bumped');
+    if (crossed) el.stage.classList.add('is-cheering');
+
+    if (celebrateTimer) clearTimeout(celebrateTimer);
+    celebrateTimer = setTimeout(function () {
+      el.stage.classList.remove('is-bumped', 'is-cheering');
+    }, crossed ? 1200 : 600);
+  }
+
   function addSet() {
     var reps = readReps();
     if (reps < 1) {
@@ -644,9 +677,17 @@
     }
 
     /* Une série est toujours celle du jour : pas de saisie rétroactive. */
-    state.sets.push({ id: uid(), date: todayISO(), reps: reps, ts: Date.now() });
+    var iso = todayISO();
+    var before = totalFor(iso);
+    var set = { id: uid(), date: iso, reps: reps, ts: Date.now() };
+
+    state.sets.push(set);
+    freshPillId = set.id;
     commit();
-    toast('Série enregistrée.');
+
+    var crossed = state.goal > 0 && before < state.goal && before + reps >= state.goal;
+    celebrate(reps, crossed);
+    toast(crossed ? 'Série enregistrée, objectif franchi !' : 'Série enregistrée.');
   }
 
   function removeSet(id) {

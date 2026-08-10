@@ -17,6 +17,9 @@ uniquement quand il dépasse.
 - Le total du jour en grand. Il monte et franchit physiquement une barre de traction à mesure
   que l’objectif approche ; objectif franchi, la barre passe en ambre.
 - Compteur `−` / `+`, chiffre éditable au clavier numérique, raccourcis **2 · 4 · 6 · 8 · 10 · 12**.
+- À l’enregistrement, le chiffre encaisse la charge, la barre fléchit et le nombre ajouté
+  s’envole ; franchir l’objectif déclenche une pulsation ambre. Tout se tait si l’appareil
+  demande moins d’animations.
 - Une série est toujours enregistrée **au jour du jour** : pas de saisie rétroactive.
 - Les séries du jour s’affichent en pastilles, sur une seule ligne.
 - Le bloc tient dans l’écran sans défiler, y compris sur un iPhone SE (375 × 667).
@@ -46,6 +49,13 @@ légende détaillée au clic sur une barre :
 - Export et import d’un fichier `.json`, réinitialisation totale en deux temps.
 
 **Hors ligne** : une fois la page chargée une première fois, l’app fonctionne sans réseau.
+
+### Couleurs
+
+Chaque section porte son accent, sur le même fond bleu pétrole : **jade** pour Training et
+l’action principale, **ambre** pour Record et l’objectif franchi, **cyan** pour Évolution et
+l’histogramme, **iris** pour Administration, **rouille** pour le destructif uniquement. Les
+quatre accents dépassent 4,5:1 de contraste sur le fond des cartes.
 
 Aucun backend, aucun tracking, aucune requête au runtime. Tout tient dans `localStorage`.
 
