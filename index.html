@@ -200,13 +200,31 @@
           <h2 class="card-title" id="statsTitle">Évolution</h2>
 
           <div class="tabs" role="tablist" aria-label="Période affichée">
-            <button type="button" role="tab" class="tab is-active" id="tab-d7"    aria-selected="true"  aria-controls="panel" data-scope="d7">7 jours</button>
+            <button type="button" role="tab" class="tab is-active" id="tab-d7"    aria-selected="true"  aria-controls="panel" data-scope="d7">Semaine</button>
             <button type="button" role="tab" class="tab"           id="tab-d30"   aria-selected="false" aria-controls="panel" data-scope="d30" tabindex="-1">30 jours</button>
             <button type="button" role="tab" class="tab"           id="tab-month" aria-selected="false" aria-controls="panel" data-scope="month" tabindex="-1">Mois</button>
             <button type="button" role="tab" class="tab"           id="tab-year"  aria-selected="false" aria-controls="panel" data-scope="year" tabindex="-1">Année</button>
           </div>
 
           <div id="panel" role="tabpanel" aria-labelledby="tab-d7" tabindex="0">
+
+            <!-- La période affichée, et les flèches pour remonter le temps. -->
+            <div class="period">
+              <button type="button" class="period-btn" id="periodPrev" aria-label="Période précédente">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+              <p class="period-label" id="periodLabel" aria-live="polite"></p>
+              <button type="button" class="period-btn" id="periodNext" aria-label="Période suivante">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+
             <p class="trend" id="trend"></p>
 
             <div class="chart">
@@ -229,13 +247,49 @@
       <div class="layout">
 
         <section class="card" aria-labelledby="goalTitle">
-          <h2 class="card-title" id="goalTitle">Objectif quotidien</h2>
+          <h2 class="card-title" id="goalTitle">Objectif</h2>
           <div class="counter counter--small">
             <button type="button" class="round-btn" id="goalDec" aria-label="Baisser l’objectif">−</button>
             <input class="counter-input" id="goalInput" type="text" inputmode="numeric" pattern="[0-9]*"
-                   autocomplete="off" maxlength="4" aria-label="Objectif quotidien">
+                   autocomplete="off" maxlength="4" aria-label="Objectif">
             <button type="button" class="round-btn" id="goalInc" aria-label="Monter l’objectif">+</button>
           </div>
+          <p class="admin-note">Le nombre de tractions à franchir dans la journée.</p>
+        </section>
+
+        <section class="card" aria-labelledby="backfillTitle">
+          <h2 class="card-title" id="backfillTitle">Ajouter une série passée</h2>
+          <p class="admin-note">Pour rattraper une séance oubliée : la série part au jour choisi.</p>
+
+          <label class="backfill-date">
+            <span>Date</span>
+            <input type="date" id="backDate">
+          </label>
+
+          <div class="backfill-fields">
+            <div class="backfill-field">
+              <span>Tractions</span>
+              <span class="counter counter--small">
+                <button type="button" class="round-btn" id="backRepsDec" aria-label="Moins de tractions">−</button>
+                <input class="counter-input" id="backReps" type="text" inputmode="numeric" pattern="[0-9]*"
+                       autocomplete="off" value="10" maxlength="3" aria-label="Tractions de la série passée">
+                <button type="button" class="round-btn" id="backRepsInc" aria-label="Plus de tractions">+</button>
+              </span>
+            </div>
+
+            <div class="backfill-field">
+              <span>Charge kg</span>
+              <span class="counter counter--small">
+                <button type="button" class="round-btn" id="backKgDec" aria-label="Moins de charge">−</button>
+                <input class="counter-input" id="backKg" type="text" inputmode="numeric" pattern="[0-9]*"
+                       autocomplete="off" value="0" maxlength="3" aria-label="Charge de la série passée">
+                <button type="button" class="round-btn" id="backKgInc" aria-label="Plus de charge">+</button>
+              </span>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn--wide" id="backAdd">Ajouter la série</button>
+          <p class="admin-note" id="backMsg" hidden></p>
         </section>
 
         <section class="card" aria-labelledby="progAdminTitle">
@@ -527,6 +581,13 @@
     </div>
   </div>
 </section>
+
+<!-- Le repos vient de finir : un panneau qui se voit de loin et s'efface seul. -->
+<button type="button" class="flash" id="flash" hidden aria-label="Masquer l’annonce">
+  <span class="flash-title" id="flashTitle"></span>
+  <span class="flash-sub" id="flashSub"></span>
+</button>
+<p class="flash-say" id="flashSay" role="status" aria-live="assertive"></p>
 
 <p class="toast" id="toast" role="status" aria-live="polite" hidden></p>
 

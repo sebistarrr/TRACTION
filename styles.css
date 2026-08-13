@@ -612,6 +612,46 @@ button, input { font: inherit; color: inherit; }
 
 /* ---------- Graphique ---------- */
 
+/* ---------- Période affichée ----------
+
+   La semaine et la fenêtre de 30 jours se remontent à la flèche ; les mois et
+   les années gardent leur fenêtre glissante, l'étiquette seule reste. */
+
+.period {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+.period-btn {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--steel);
+  border-radius: var(--r-soft);
+  background: transparent;
+  color: var(--bar);
+  cursor: pointer;
+}
+.period-btn svg { width: 19px; height: 19px; }
+.period-btn:hover { border-color: var(--bar); }
+.period-btn:disabled { opacity: .28; cursor: not-allowed; }
+.period-btn:disabled:hover { border-color: var(--steel); }
+.period-btn[hidden] { display: none; }
+
+.period-label {
+  min-width: 0;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--chalk);
+}
+/* Une fenêtre passée : l'étiquette le dit sans couleur d'alerte. */
+.period.is-past .period-label { color: var(--sky); }
+
 .trend {
   margin: 10px 0 2px;
   font-family: var(--mono);
@@ -674,6 +714,8 @@ button, input { font: inherit; color: inherit; }
   background: var(--steel);
 }
 .bar.is-empty .bar-value { color: var(--haze); }
+/* Une journée qui n'est pas encore venue : la place est tenue, rien de plus. */
+.bar.is-future .bar-fill { opacity: .35; }
 .bar.is-selected .bar-value { color: var(--chalk); }
 .bar.is-over .bar-value { color: var(--flare); }
 
@@ -833,6 +875,63 @@ button, input { font: inherit; color: inherit; }
   min-height: 130px;
 }
 
+/* ---------- Annonce de reprise ----------
+
+   Le repos est fini, ou une minute d'EMOM s'ouvre : un panneau qui se lit à
+   bout de bras, par-dessus la séance, et qui s'efface tout seul. */
+
+.flash {
+  position: fixed;
+  left: 50%;
+  top: calc(max(12px, env(safe-area-inset-top)) + 74px);
+  transform: translateX(-50%);
+  z-index: 90;
+  width: min(92vw, 440px);
+  display: grid;
+  gap: 4px;
+  padding: 16px 20px;
+  border: 1px solid var(--flare);
+  border-radius: var(--r-card);
+  background: linear-gradient(180deg, #3A2A0E 0%, #241A08 100%);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .6), 0 0 34px rgba(255, 176, 46, .28);
+  color: var(--chalk);
+  text-align: center;
+  cursor: pointer;
+  animation: flash-in .28s cubic-bezier(.2, .9, .3, 1);
+}
+.flash-title {
+  font-family: var(--display);
+  font-size: clamp(24px, 7vw, 32px);
+  line-height: 1.05;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--flare);
+}
+.flash-sub {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--bar);
+}
+@keyframes flash-in {
+  from { opacity: 0; transform: translate(-50%, -14px) scale(.96); }
+  to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+/* La même annonce, pour les lecteurs d'écran : le panneau apparaît et
+   disparaît, une région live stable les sert mieux. */
+.flash-say {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* ---------- Toast ---------- */
 
 .toast {
@@ -979,6 +1078,57 @@ body.is-locked { overflow: hidden; }
 .btn--danger.is-armed { background: var(--rust); color: #fff; border-color: var(--rust); }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 .btn:disabled:hover { border-color: var(--steel); }
+
+/* ---------- Administration : la série passée ---------- */
+
+.backfill-date {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+}
+.backfill-date > span,
+.backfill-field > span {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--haze);
+}
+.backfill-date input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--steel);
+  border-radius: var(--r-soft);
+  background: #10262F;
+  font-family: var(--mono);
+  font-size: 16px;
+  color: var(--chalk);
+  -webkit-appearance: none;
+  appearance: none;
+}
+.backfill-date input:focus { border-color: var(--bar); outline: none; }
+
+/* Deux compteurs côte à côte ne tiennent pas sous 560 px sans rétrécir les
+   boutons sous la cible tactile : ils se posent l'un sous l'autre. */
+.backfill-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+@media (min-width: 560px) {
+  .backfill-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.backfill-field {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  padding: 8px 6px 10px;
+  border: 1px solid var(--steel);
+  border-radius: var(--r-soft);
+}
+.backfill-field .counter { margin: 0; }
 
 .day-rows { margin-top: 6px; max-width: 640px; margin-inline: auto; }
 

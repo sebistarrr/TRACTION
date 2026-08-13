@@ -11,10 +11,13 @@
   var MAX_GOAL = 9999;
   var MAX_KG = 200;
 
+  /* « nav » : la fenêtre se remonte à la flèche, une période à la fois.
+     La semaine est une vraie semaine calendaire, du lundi au dimanche ; les
+     30 jours sont une fenêtre glissante qui recule d'un bloc de 30. */
   var SCOPES = {
-    d7:    { count: 7,  trend: 'vs hier',          daily: true },
-    d30:   { count: 30, trend: 'vs hier',          daily: true, dense: true },
-    month: { count: 12, trend: 'vs mois dernier',  dense: true },
+    d7:    { count: 7,  trend: 'vs semaine précédente',  daily: true, week: true, nav: true },
+    d30:   { count: 30, trend: 'vs 30 jours précédents', daily: true, dense: true, nav: true },
+    month: { count: 12, trend: 'vs mois dernier',        dense: true },
     year:  { count: 5,  trend: 'vs an dernier' }
   };
 
@@ -194,6 +197,12 @@
     return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
   }
 
+  /* Le lundi de la semaine d'une date : la semaine française commence là. */
+  function weekStart(d) {
+    var back = (d.getDay() + 6) % 7;
+    return addDays(new Date(d.getFullYear(), d.getMonth(), d.getDate()), -back);
+  }
+
   function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
 
   function daysInYear(y) {
@@ -210,6 +219,20 @@
 
   function longDate(iso) {
     return fromISO(iso).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long' });
+  }
+
+  function shortDate(iso) {
+    return fromISO(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  }
+
+  /* « 10 – 16 août », « 28 juil. – 3 août », l'année en plus si ce n'est pas
+     celle qui court. */
+  function rangeLabel(from, to) {
+    var a = fromISO(from);
+    var b = fromISO(to);
+    var sameMonth = a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear();
+    var year = b.getFullYear() !== new Date().getFullYear() ? ' ' + b.getFullYear() : '';
+    return (sameMonth ? String(a.getDate()) : shortDate(from)) + ' – ' + shortDate(to) + year;
   }
 
   function fullDate(iso) {
@@ -514,6 +537,35 @@
     return iso.slice(0, 4);
   }
 
+  /* Le dernier jour de la fenêtre affichée. En hebdomadaire c'est le dimanche
+     de la semaine visée, sinon le jour d'arrivée de la fenêtre glissante.
+     offset 0 : la période en cours ; 1 : la précédente, et ainsi de suite. */
+  function windowEnd(name, offset) {
+    var today = new Date();
+    if (SCOPES[name].week) return addDays(weekStart(today), 6 - 7 * offset);
+    return addDays(today, -SCOPES[name].count * offset);
+  }
+
+  function sumBetween(from, to) {
+    var total = 0;
+    for (var i = 0; i < state.sets.length; i++) {
+      var d = state.sets[i].date;
+      if (d >= from && d <= to) total += state.sets[i].reps;
+    }
+    return total;
+  }
+
+  /* Combien de jours de la fenêtre sont déjà passés : une semaine en cours
+     n'est comparable qu'à la même portion de la précédente. */
+  function elapsedSpan(buckets) {
+    var today = todayISO();
+    var span = 0;
+    for (var i = 0; i < buckets.length; i++) {
+      if (buckets[i].key <= today) span++;
+    }
+    return clamp(span, 1, buckets.length);
+  }
+
   /* Construit les seaux affichés pour un onglet, du plus ancien au plus récent. */
   function buildBuckets(name) {
     var today = new Date();
@@ -525,8 +577,9 @@
     if (SCOPES[name].daily) {
       /* Échelle journalière : l'objectif de référence est le même chaque jour,
          d'où une ligne d'objectif parfaitement horizontale. */
+      var end = windowEnd(name, periodOffset);
       for (i = n - 1; i >= 0; i--) {
-        var d = addDays(today, -i);
+        var d = addDays(end, -i);
         var iso = isoOf(d);
         list.push({
           key: iso,
@@ -534,6 +587,9 @@
             ? d.toLocaleDateString('fr-FR', { weekday: 'narrow' }) + ' ' + d.getDate()
             : String(d.getDate()),
           title: capitalize(longDate(iso)),
+          /* La semaine en cours porte des jours qui ne sont pas encore venus :
+             ils n'ont pas fait zéro, ils n'ont rien fait du tout. */
+          future: iso > todayISO(),
           goalRef: goal
         });
       }
@@ -596,7 +652,7 @@
     for (var i = 0; i < buckets.length; i++) max = Math.max(max, buckets[i].value);
     var goalRef = buckets[buckets.length - 1].goalRef;
 
-    /* En journalier, l'objectif quotidien est toujours tracé : c'est le repère. */
+    /* En journalier, l'objectif du jour est toujours tracé : c'est le repère. */
     if (SCOPES[name].daily) {
       return { max: Math.max(max, goalRef, 1) * HEADROOM, goalRef: goalRef, showGoal: goalRef > 0 };
     }
@@ -630,6 +686,10 @@
     loadChips: $('loadChips'),
     tabs: Array.prototype.slice.call(document.querySelectorAll('.tab')),
     panel: $('panel'),
+    period: document.querySelector('.period'),
+    periodPrev: $('periodPrev'),
+    periodNext: $('periodNext'),
+    periodLabel: $('periodLabel'),
     trend: $('trend'),
     chart: document.querySelector('.chart'),
     journal: $('journal'),
@@ -646,7 +706,16 @@
     rTotal: $('rTotal'),
     rTotalSub: $('rTotalSub'),
     toast: $('toast'),
+    flash: $('flash'),
+    flashTitle: $('flashTitle'),
+    flashSub: $('flashSub'),
+    flashSay: $('flashSay'),
     goalInput: $('goalInput'),
+    backDate: $('backDate'),
+    backReps: $('backReps'),
+    backKg: $('backKg'),
+    backAdd: $('backAdd'),
+    backMsg: $('backMsg'),
     dayPage: $('dayPage'),
     dayBack: $('dayBack'),
     dayTitle: $('dayTitle'),
@@ -737,8 +806,11 @@
 
   var view = 'training';
   var scope = 'd7';
+  var periodOffset = 0;      // 0 : période en cours, 1 : la précédente…
   var selected = null;       // clé du seau sélectionné dans le graphique
   var toastTimer = null;
+  var flashTimer = null;
+  var emomFlashed = -1;      // dernière minute d'EMOM annoncée
   var resetArmed = false;
   var pendingImport = null;
   var freshPillId = null;        // la pastille tout juste ajoutée, pour l'animer
@@ -754,6 +826,25 @@
     el.toast.hidden = false;
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { el.toast.hidden = true; }, 3200);
+  }
+
+  /* L'annonce de reprise : le repos est fini, ou une minute d'EMOM s'ouvre.
+     Elle se voit à bout de bras, s'efface seule au bout de quatre secondes, et
+     part en même temps dans une région live — le panneau apparaît puis
+     disparaît, les lecteurs d'écran sont mieux servis par un texte stable. */
+  function flash(title, sub) {
+    el.flashTitle.textContent = title;
+    el.flashSub.textContent = sub || '';
+    el.flash.hidden = false;
+    el.flashSay.textContent = title + (sub ? '. ' + sub : '');
+    if (flashTimer) clearTimeout(flashTimer);
+    flashTimer = setTimeout(hideFlash, 4000);
+  }
+
+  function hideFlash() {
+    if (flashTimer) { clearTimeout(flashTimer); flashTimer = null; }
+    el.flash.hidden = true;
+    el.flashSay.textContent = '';
   }
 
   function renderToday() {
@@ -817,9 +908,21 @@
 
   function trendText(buckets) {
     var n = buckets.length;
-    var cur = buckets[n - 1].value;
-    var prev = buckets[n - 2].value;
     var label = SCOPES[scope].trend;
+    var cur, prev;
+
+    if (SCOPES[scope].daily) {
+      /* Fenêtre contre fenêtre, à portion égale : une semaine entamée le mardi
+         se compare aux deux premiers jours de la semaine d'avant, pas à sept. */
+      var span = elapsedSpan(buckets);
+      var from = fromISO(buckets[0].key);
+      var back = isoOf(addDays(from, -SCOPES[scope].count));
+      cur = sumBetween(buckets[0].key, buckets[span - 1].key);
+      prev = sumBetween(back, isoOf(addDays(fromISO(back), span - 1)));
+    } else {
+      cur = buckets[n - 1].value;
+      prev = buckets[n - 2].value;
+    }
 
     if (prev === 0 && cur === 0) return '<em>Rien à comparer ' + label + '.</em>';
     if (prev === 0) return '<b class="up">↑ nouveau</b> ' + label;
@@ -848,6 +951,59 @@
     return head + ' — ' + body;
   }
 
+  /* Mois et années gardent leur fenêtre glissante : l'étiquette dit ce qu'on
+     regarde, sans flèches. */
+  function spanLabel(buckets) {
+    var first = buckets[0];
+    var last = buckets[buckets.length - 1];
+    if (SCOPES[scope].daily) return rangeLabel(first.key, last.key);
+    if (scope === 'year') return first.axis + ' – ' + last.axis;
+    return monthLabel(first.key) + ' – ' + monthLabel(last.key);
+  }
+
+  function monthLabel(key) {
+    var p = key.split('-');
+    return new Date(Number(p[0]), Number(p[1]) - 1, 1)
+      .toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+  }
+
+  /* Les flèches ne mènent nulle part au-delà des données : on ne remonte pas
+     avant la première série, et on ne dépasse pas la période en cours. */
+  function renderPeriod(buckets) {
+    var nav = !!SCOPES[scope].nav;
+    var first = firstDate();
+
+    el.period.classList.toggle('is-past', periodOffset > 0);
+    el.periodLabel.textContent = spanLabel(buckets);
+    el.periodPrev.hidden = !nav;
+    el.periodNext.hidden = !nav;
+    el.periodNext.disabled = periodOffset === 0;
+    el.periodPrev.disabled = !first || buckets[0].key <= first;
+  }
+
+  function stepPeriod(n) {
+    if (!SCOPES[scope].nav) return;
+    var next = Math.max(0, periodOffset + n);
+    if (next === periodOffset) return;
+    periodOffset = next;
+    selected = null;                 /* la sélection suit la fenêtre affichée */
+    renderChart();
+  }
+
+  /* Ce qu'on regarde en arrivant sur une fenêtre : la dernière journée qui a
+     quelque chose à dire, sans jamais dépasser aujourd'hui. */
+  function defaultKey(buckets) {
+    var today = todayISO();
+    var fallback = null;
+    for (var i = buckets.length - 1; i >= 0; i--) {
+      var b = buckets[i];
+      if (b.future) continue;
+      if (fallback === null) fallback = b.key;
+      if (b.value > 0) return b.key;
+    }
+    return fallback === null ? buckets[buckets.length - 1].key : fallback;
+  }
+
   function renderChart() {
     var buckets = buildBuckets(scope);
     var scale = scaleFor(scope, buckets);
@@ -858,9 +1014,10 @@
     el.chart.classList.toggle('is-dense', dense);
 
     if (!selected || !buckets.some(function (b) { return b.key === selected; })) {
-      selected = buckets[n - 1].key;
+      selected = defaultKey(buckets);
     }
 
+    renderPeriod(buckets);
     el.trend.innerHTML = trendText(buckets);
 
     el.plot.querySelectorAll('.bar').forEach(function (b) { b.remove(); });
@@ -881,9 +1038,12 @@
 
       btn.style.setProperty('--h', pct.toFixed(2) + '%');
 
+      if (b.future) btn.className += ' is-future';
+
       /* Le nombre de tractions, au-dessus de sa barre. Les journées vides des
-         échelles denses restent muettes : un « 0 » répété n'apprend rien. */
-      if (b.value > 0 || !dense) {
+         échelles denses restent muettes : un « 0 » répété n'apprend rien, et
+         une journée qui n'est pas arrivée n'a pas fait zéro. */
+      if (b.value > 0 || (!dense && !b.future)) {
         var value = document.createElement('span');
         value.className = 'bar-value';
         value.textContent = fmt(b.value);
@@ -1241,6 +1401,14 @@
     el.emomEntry.hidden = waiting;
     el.emomWait.hidden = !waiting;
 
+    /* Une minute vient de s'ouvrir : on l'annonce une fois, et une seule.
+       Rien pendant l'attente — la reprise, c'est le moment qui compte. */
+    if (!waiting && s.done.length > 0 && emomFlashed !== s.done.length) {
+      emomFlashed = s.done.length;
+      flash('Minute ' + (s.done.length + 1) + ' sur ' + s.rounds,
+        'Objectif : ' + fmt(s.reps) + ' traction' + plural(s.reps));
+    }
+
     if (waiting) {
       var last = s.done[s.done.length - 1];
       el.emomWaitHint.textContent = fmt(last) + ' traction' + plural(last) +
@@ -1502,6 +1670,11 @@
     if (document.activeElement !== el.goalInput) el.goalInput.value = String(state.goal);
     disarmReset();
     el.resetBtn.disabled = state.sets.length === 0;
+
+    /* La date déjà choisie ne bouge pas : on rattrape souvent deux séries de
+       suite sur la même journée. */
+    el.backDate.max = todayISO();
+    if (!el.backDate.value) el.backDate.value = todayISO();
   }
 
   function render() {
@@ -1606,6 +1779,17 @@
     stopRestTick();
     commit();
     ready();
+    announceSet(s);
+  }
+
+  /* Le repos vient de se terminer tout seul : dire laquelle vient, et son
+     objectif. Passer le repos à la main n'annonce rien, on sait ce qu'on fait. */
+  function announceSet(s) {
+    var day = LEVELS[s.level].days[s.day];
+    var i = s.reps.length;
+    if (i >= day.sets.length) return;
+    flash('Repos terminé', 'Série ' + (i + 1) + ' sur ' + day.sets.length +
+      ' · objectif ' + targetLabel(day.sets[i]));
   }
 
   function startRestTick() { if (!restTimer) restTimer = setInterval(watchRest, 250); }
@@ -1856,6 +2040,61 @@
     commit();
   }
 
+  /* ------------------------------------------------- la série rattrapée
+
+     Une séance oubliée se rattrape depuis l'administration : la date, le
+     nombre, la charge. Elle entre au journal comme une série libre.        */
+
+  function backNote(text, isError) {
+    el.backMsg.textContent = text;
+    el.backMsg.classList.toggle('is-error', !!isError);
+    el.backMsg.hidden = false;
+  }
+
+  /* Une série rattrapée se range à la fin de sa journée : midi, ou juste après
+     la dernière déjà enregistrée ce jour-là. */
+  function pastStamp(iso) {
+    if (iso === todayISO()) return Date.now();
+    var stamp = fromISO(iso).getTime() + 12 * 3600000;
+    var sets = setsFor(iso);
+    for (var i = 0; i < sets.length; i++) {
+      if (sets[i].ts >= stamp) stamp = sets[i].ts + 60000;
+    }
+    return stamp;
+  }
+
+  function addPastSet() {
+    var iso = el.backDate.value;
+
+    if (!isValidISO(iso)) {
+      backNote('Choisis une date pour la série.', true);
+      el.backDate.focus();
+      return;
+    }
+    if (iso > todayISO()) {
+      backNote('Cette date n’est pas encore arrivée.', true);
+      el.backDate.focus();
+      return;
+    }
+
+    var reps = int(el.backReps.value, 0, MAX_REPS, 0);
+    if (reps < 1) {
+      backNote('Indique au moins 1 traction.', true);
+      el.backReps.focus();
+      return;
+    }
+
+    var kg = int(el.backKg.value, 0, MAX_KG, 0);
+    state.sets.push({ id: uid(), date: iso, reps: reps, kg: kg, ts: pastStamp(iso), src: 'libre' });
+    commit();
+
+    var count = setsFor(iso).length;
+    backNote(fmt(reps) + ' traction' + plural(reps) + (kg > 0 ? ' à +' + kg + ' kg' : '') +
+      ' ajoutée' + plural(reps) + ' au ' + longDate(iso) + ' · ' +
+      count + ' série' + plural(count) + ' ce jour-là.', false);
+    toast('Série ajoutée au ' + longDate(iso) + '.');
+  }
+
   function disarmReset() {
     resetArmed = false;
     el.resetBtn.classList.remove('is-armed');
@@ -2039,6 +2278,9 @@
     el.daysPage.hidden = !daysOpen;
     lockBody();
 
+    /* L'annonce n'a de sens que sur la séance qui l'a déclenchée. */
+    if (!sessionOpen && !emomOpen) hideFlash();
+
     if (daysOpen) {
       renderDays();
       window.scrollTo(0, 0);
@@ -2088,16 +2330,22 @@
   }
 
   function closeSession() {
+    hideFlash();
     if (location.hash === '#seance') history.back();
     else syncRoute();
   }
 
   function openEmom() {
+    /* Reprendre une séance déjà entamée ne doit pas annoncer une minute que
+       l'on est en train de vivre : on part de là où elle en est. */
+    emomFlashed = state.emom.session ? state.emom.session.done.length : -1;
     history.pushState({ emom: true }, '', '#emom');
     syncRoute();
   }
 
   function closeEmom() {
+    hideFlash();
+    emomFlashed = -1;
     if (location.hash === '#emom') history.back();
     else syncRoute();
   }
@@ -2184,6 +2432,7 @@
       t.tabIndex = on ? 0 : -1;
     });
     scope = el.tabs[i].dataset.scope;
+    periodOffset = 0;              /* changer d'échelle ramène au présent */
     selected = null;
     el.panel.setAttribute('aria-labelledby', el.tabs[i].id);
     if (focus) el.tabs[i].focus();
@@ -2199,6 +2448,11 @@
       activateTab((i + step + el.tabs.length) % el.tabs.length, true);
     });
   });
+
+  el.periodPrev.addEventListener('click', function () { stepPeriod(1); });
+  el.periodNext.addEventListener('click', function () { stepPeriod(-1); });
+
+  el.flash.addEventListener('click', hideFlash);
 
   el.journal.addEventListener('click', function (e) {
     var day = e.target.closest('[data-day]');
@@ -2378,6 +2632,31 @@
 
   $('goalDec').addEventListener('click', function () { setGoal(state.goal - 5); });
   $('goalInc').addEventListener('click', function () { setGoal(state.goal + 5); });
+
+  /* ------------------------------------- administration : série rattrapée */
+
+  function stepBack(input, n, hi) {
+    input.value = String(clamp(int(input.value, 0, hi, 0) + n, 0, hi));
+  }
+
+  el.backReps.addEventListener('input', function () {
+    var cleaned = el.backReps.value.replace(/\D/g, '').slice(0, 3);
+    if (cleaned !== el.backReps.value) el.backReps.value = cleaned;
+  });
+  el.backKg.addEventListener('input', function () {
+    var cleaned = el.backKg.value.replace(/\D/g, '').slice(0, 3);
+    if (cleaned !== el.backKg.value) el.backKg.value = cleaned;
+  });
+  el.backReps.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); addPastSet(); }
+  });
+
+  $('backRepsDec').addEventListener('click', function () { stepBack(el.backReps, -1, MAX_REPS); });
+  $('backRepsInc').addEventListener('click', function () { stepBack(el.backReps, 1, MAX_REPS); });
+  $('backKgDec').addEventListener('click', function () { stepBack(el.backKg, -5, MAX_KG); });
+  $('backKgInc').addEventListener('click', function () { stepBack(el.backKg, 5, MAX_KG); });
+
+  el.backAdd.addEventListener('click', addPastSet);
 
   el.resetBtn.addEventListener('click', function () {
     if (!state.sets.length) return;

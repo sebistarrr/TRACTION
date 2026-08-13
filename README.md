@@ -28,7 +28,8 @@ de l’onglet. Le choix se garde d’une session à l’autre et se change à to
 - À l’enregistrement, le chiffre encaisse la charge, la barre fléchit et le nombre ajouté
   s’envole en orange ; franchir l’objectif déclenche une pulsation ambre. Tout se tait si
   l’appareil demande moins d’animations.
-- Une série est toujours enregistrée **au jour du jour** : pas de saisie rétroactive.
+- Une série est toujours enregistrée **au jour du jour**. Une séance oubliée se rattrape
+  depuis **Admin → Ajouter une série passée**.
 - **Toutes les séries du jour** s’affichent en pastilles, dans l’ordre, sur autant de lignes
   qu’il en faut, charge comprise.
 - Le bloc tient dans l’écran sans défiler, du plus petit au plus grand.
@@ -81,8 +82,10 @@ partir de 3.
 
 1. l’objectif en grand, le champ prérempli à cette valeur ;
 2. on corrige le nombre réellement effectué, on valide ;
-3. le **repos de 120 secondes** part aussitôt, en anneau. Il se passe d’un bouton,
-   et se termine seul par une pulsation ambre — l’écran n’est pas forcément sous les yeux ;
+3. le **repos de 120 secondes** part aussitôt, en anneau. Il se passe d’un bouton, et
+   se termine seul : un **panneau ambre** annonce la série qui vient et son objectif,
+   par-dessus la séance, et s’efface au bout de quatre secondes ou à la touche —
+   l’écran n’est pas forcément sous les yeux. Passer le repos à la main n’annonce rien ;
 4. après la cinquième série, le **bilan** : chaque série face à son objectif.
 
 **Objectif rempli** — les cinq séries au moins à leur objectif — fait passer au jour
@@ -124,7 +127,9 @@ en cours, et c’est lui qui mène :
 
 - on renseigne le **nombre réellement effectué**, puis on valide ;
 - validée en avance, la série laisse souffler jusqu’à la minute suivante, qui
-  reprend la main toute seule ;
+  reprend la main toute seule. Chaque minute qui s’ouvre s’annonce par le même
+  **panneau ambre** que le repos du programme : son rang et son objectif, quatre
+  secondes ;
 - **la minute se referme sur le nombre affiché** si rien n’est validé. Une minute
   passée entièrement à côté — écran éteint, téléphone dans la poche — se referme
   sur l’objectif ;
@@ -162,12 +167,23 @@ Histogramme sur quatre échelles. **Chaque barre porte son nombre de tractions**
 quart de tour sur les échelles denses pour rester lisible. Variation vs la période précédente
 et légende détaillée au clic sur une barre.
 
-| Échelle  | Fenêtre affichée   | Ligne d’objectif              |
-|----------|--------------------|-------------------------------|
-| 7 jours  | 7 derniers jours   | objectif quotidien, constante |
-| 30 jours | 30 derniers jours  | objectif quotidien, constante |
-| Mois     | 12 derniers mois   | aucune                        |
-| Année    | 5 dernières années | aucune                        |
+| Échelle  | Fenêtre affichée              | Flèches | Ligne d’objectif    |
+|----------|-------------------------------|---------|---------------------|
+| Semaine  | du lundi au dimanche          | oui     | objectif, constante |
+| 30 jours | 30 jours glissants            | oui     | objectif, constante |
+| Mois     | 12 derniers mois              | non     | aucune              |
+| Année    | 5 dernières années            | non     | aucune              |
+
+**Semaine** et **30 jours** se remontent le temps à la flèche, une période entière à la fois :
+la semaine d’avant, les trente jours d’avant. L’étiquette dit la fenêtre affichée — « 10 – 16 août » —
+et passe en cyan dès qu’on quitte la période en cours. La flèche avant s’éteint sur le présent,
+la flèche arrière quand il n’y a plus rien de plus ancien à voir. Changer d’échelle ramène au présent.
+
+La **tendance compare la fenêtre à la précédente**, à portion égale : une semaine entamée le
+mardi se compare aux deux premiers jours de la semaine d’avant, pas à sept.
+
+Dans la semaine en cours, **les jours qui ne sont pas encore venus** gardent leur place sans
+porter de nombre : ils n’ont pas fait zéro.
 
 Sur les deux échelles journalières, la ligne d’objectif est toujours tracée : c’est le repère
 horizontal constant qui dit d’un coup d’œil quelles journées ont franchi la barre.
@@ -179,12 +195,16 @@ entre périodes bien plus lisibles.
 
 ### 5. Administration
 
-- Objectif quotidien.
+- **Objectif** : le nombre de tractions à franchir dans la journée.
+- **Ajouter une série passée** : la date, le nombre, la charge. La série part au jour
+  choisi comme une série libre, et se range à la fin de cette journée-là. Une date à
+  venir est refusée.
 - **Programme 50 tractions** : niveau et jour en cours, et *Choisir les jours du
   programme* pour reprendre la main dessus.
 - Export et import d’un fichier `.json`, réinitialisation totale en deux temps.
 
-La gestion des séries se fait depuis le Journal, où elle a sa place naturelle : par date.
+La modification des séries existantes se fait depuis le Journal, où elle a sa place
+naturelle : par date.
 
 **Hors ligne** : une fois la page chargée une première fois, l’app fonctionne sans réseau.
 
