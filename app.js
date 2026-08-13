@@ -5,7 +5,7 @@
   'use strict';
 
   var KEY = 'tractions:v1';
-  var SCHEMA = 2;              /* v1 : sans charge — relu et converti en kg = 0 */
+  var SCHEMA = 4;              /* v1 : sans charge · v2 : sans programme · v3 : sans origine */
   var DEFAULT_GOAL = 50;
   var MAX_REPS = 999;
   var MAX_GOAL = 9999;
@@ -19,6 +19,152 @@
   };
 
   var MONTH_INITIALS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+
+  /* ------------------------------------------------- programme 50 tractions
+
+     Cycles repris de 50tractions.com : un niveau par palier de test, six ou
+     neuf journées par cycle, cinq séries par journée, 120 secondes de repos.
+     Un nombre est un objectif ferme ; « 10+ » est une série à l'épuisement
+     dont le minimum à valider est 10.                                        */
+
+  var LEVELS = [
+    { name: 'Moins de 4 tractions', min: 0, max: 3, rest: 120, days: [
+      { sets: [2, 7, 5, 5, 7], pause: 1 },
+      { sets: [3, 8, 6, 6, 8], pause: 1 },
+      { sets: [4, 9, 6, 6, 8], pause: 2 },
+      { sets: [5, 8, 7, 7, 9], pause: 1 },
+      { sets: [5, 10, 8, 8, 10], pause: 1 },
+      { sets: [6, 10, 8, 8, 11], pause: 2 }
+    ] },
+    { name: '4-5 tractions', min: 4, max: 5, rest: 120, days: [
+      { sets: [4, 9, 6, 6, 9], pause: 1 },
+      { sets: [5, 9, 7, 7, 9], pause: 1 },
+      { sets: [6, 10, 8, 8, 10], pause: 2 },
+      { sets: [6, 11, 8, 8, 11], pause: 1 },
+      { sets: [7, 12, 10, 10, 12], pause: 1 },
+      { sets: [8, 14, 11, 11, 14], pause: 2 }
+    ] },
+    { name: '6-8 tractions', min: 6, max: 8, rest: 120, days: [
+      { sets: [2, 3, 2, 2, '3+'], pause: 1 },
+      { sets: [2, 3, 2, 2, '4+'], pause: 1 },
+      { sets: [3, 4, 2, 2, '4+'], pause: 2 },
+      { sets: [3, 4, 3, 3, '4+'], pause: 1 },
+      { sets: [3, 4, 3, 3, '5+'], pause: 1 },
+      { sets: [4, 5, 4, 4, '6+'], pause: 2 }
+    ] },
+    { name: '9-11 tractions', min: 9, max: 11, rest: 120, days: [
+      { sets: [3, 5, 3, 3, '5+'], pause: 1 },
+      { sets: [4, 6, 4, 4, '6+'], pause: 1 },
+      { sets: [5, 7, 5, 5, '6+'], pause: 2 },
+      { sets: [5, 8, 5, 5, '8+'], pause: 1 },
+      { sets: [6, 9, 6, 6, '8+'], pause: 1 },
+      { sets: [6, 9, 6, 6, '10+'], pause: 2 }
+    ] },
+    { name: '12-15 tractions', min: 12, max: 15, rest: 120, days: [
+      { sets: [6, 8, 6, 6, '8+'], pause: 1 },
+      { sets: [6, 9, 6, 6, '9+'], pause: 1 },
+      { sets: [7, 10, 6, 6, '9+'], pause: 2 },
+      { sets: [7, 10, 7, 7, '10+'], pause: 1 },
+      { sets: [8, 11, 8, 8, '10+'], pause: 1 },
+      { sets: [9, 11, 9, 9, '11+'], pause: 2 }
+    ] },
+    { name: '16-20 tractions', min: 16, max: 20, rest: 120, days: [
+      { sets: [8, 11, 8, 8, '10+'], pause: 1 },
+      { sets: [9, 12, 9, 9, '11+'], pause: 1 },
+      { sets: [9, 13, 9, 9, '12+'], pause: 2 },
+      { sets: [10, 14, 10, 10, '13+'], pause: 1 },
+      { sets: [11, 15, 10, 10, '13+'], pause: 1 },
+      { sets: [11, 15, 11, 11, '13+'], pause: 2 },
+      { sets: [12, 16, 11, 11, '15+'], pause: 1 },
+      { sets: [12, 16, 12, 12, '16+'], pause: 1 },
+      { sets: [13, 17, 13, 13, '16+'], pause: 2 }
+    ] },
+    { name: '21-25 tractions', min: 21, max: 25, rest: 120, days: [
+      { sets: [12, 16, 12, 12, '15+'], pause: 1 },
+      { sets: [13, 16, 12, 12, '16+'], pause: 1 },
+      { sets: [13, 17, 13, 13, '16+'], pause: 2 },
+      { sets: [14, 19, 13, 13, '18+'], pause: 1 },
+      { sets: [14, 19, 14, 14, '19+'], pause: 1 },
+      { sets: [15, 20, 14, 14, '20+'], pause: 2 },
+      { sets: [16, 20, 16, 16, '20+'], pause: 1 },
+      { sets: [16, 21, 16, 16, '20+'], pause: 1 },
+      { sets: [17, 22, 16, 16, '21+'], pause: 2 }
+    ] },
+    { name: '26-30 tractions', min: 26, max: 30, rest: 120, days: [
+      { sets: [16, 18, 15, 15, '17+'], pause: 1 },
+      { sets: [16, 20, 16, 16, '19+'], pause: 1 },
+      { sets: [17, 21, 16, 16, '20+'], pause: 2 },
+      { sets: [17, 22, 17, 17, '22+'], pause: 1 },
+      { sets: [18, 23, 18, 18, '22+'], pause: 1 },
+      { sets: [19, 25, 18, 18, '24+'], pause: 2 },
+      { sets: [19, 26, 18, 18, '25+'], pause: 1 },
+      { sets: [19, 27, 19, 19, '26+'], pause: 1 },
+      { sets: [20, 28, 20, 20, '28+'], pause: 2 }
+    ] },
+    { name: '31-35 tractions', min: 31, max: 35, rest: 120, days: [
+      { sets: [20, 25, 19, 19, '23+'], pause: 1 },
+      { sets: [22, 25, 21, 21, '25+'], pause: 1 },
+      { sets: [23, 26, 23, 23, '25+'], pause: 2 },
+      { sets: [24, 27, 24, 24, '26+'], pause: 1 },
+      { sets: [25, 28, 24, 24, '27+'], pause: 1 },
+      { sets: [25, 29, 25, 25, '28+'], pause: 2 },
+      { sets: [26, 29, 25, 25, '29+'], pause: 1 },
+      { sets: [26, 30, 26, 26, '30+'], pause: 1 },
+      { sets: [26, 32, 26, 26, '32+'], pause: 2 }
+    ] },
+    { name: '36-40 tractions', min: 36, max: 40, rest: 120, days: [
+      { sets: [23, 27, 22, 22, '26+'], pause: 1 },
+      { sets: [24, 28, 24, 24, '28+'], pause: 1 },
+      { sets: [25, 29, 24, 24, '29+'], pause: 2 },
+      { sets: [26, 30, 25, 25, '30+'], pause: 1 },
+      { sets: [26, 31, 25, 25, '31+'], pause: 1 },
+      { sets: [26, 31, 26, 26, '31+'], pause: 2 },
+      { sets: [27, 31, 26, 26, '32+'], pause: 1 },
+      { sets: [28, 32, 26, 26, '32+'], pause: 1 },
+      { sets: [28, 34, 27, 27, '34+'], pause: 2 }
+    ] },
+    { name: 'Plus de 40 tractions', min: 41, max: 999, rest: 120, days: [
+      { sets: [25, 28, 24, 24, '26+'], pause: 1 },
+      { sets: [25, 29, 25, 25, '28+'], pause: 1 },
+      { sets: [25, 30, 25, 25, '29+'], pause: 2 },
+      { sets: [26, 31, 25, 25, '31+'], pause: 1 },
+      { sets: [26, 32, 26, 26, '31+'], pause: 1 },
+      { sets: [27, 32, 26, 26, '32+'], pause: 2 },
+      { sets: [27, 34, 26, 26, '33+'], pause: 1 },
+      { sets: [28, 34, 26, 26, '34+'], pause: 1 },
+      { sets: [29, 35, 27, 27, '35+'], pause: 2 }
+    ] }
+  ];
+
+  var LAST_LEVEL = LEVELS.length - 1;
+
+  /* Le test dit le cycle : on prend le premier palier qui contient le score. */
+  function levelForScore(n) {
+    for (var i = 0; i < LEVELS.length; i++) {
+      if (n <= LEVELS[i].max) return i;
+    }
+    return LAST_LEVEL;
+  }
+
+  /* Un objectif de série : « 8 » est ferme, « 10+ » va à l'épuisement
+     et se valide à partir de 10. */
+  function target(v) {
+    return typeof v === 'number'
+      ? { min: v, open: false }
+      : { min: parseInt(v, 10), open: true };
+  }
+
+  function targetLabel(v) {
+    var t = target(v);
+    return t.open ? t.min + '+' : String(t.min);
+  }
+
+  function levelOf(p) { return LEVELS[clamp(p.level, 0, LAST_LEVEL)]; }
+
+  function dayOf(p) {
+    var lvl = levelOf(p);
+    return lvl.days[clamp(p.day, 0, lvl.days.length - 1)];
+  }
 
   /* ---------------------------------------------------------- outils dates */
 
@@ -77,6 +223,32 @@
     return fmt(s.reps) + (s.kg > 0 ? ' +' + s.kg + ' kg' : '');
   }
 
+  /* Une pastille de série : le nombre, la charge, et l'origine par la couleur.
+     Le libellé d'origine reste lisible au survol et pour les lecteurs d'écran. */
+  function fillPill(node, set, extra) {
+    var src = SOURCES[set.src];
+    node.className = 'pill pill--' + src.cls + (extra ? ' ' + extra : '');
+    node.textContent = fmt(set.reps);
+    node.title = setLabel(set) + ' · ' + src.tag;
+
+    if (set.kg > 0) {
+      var kg = document.createElement('span');
+      kg.className = 'pill-kg';
+      kg.textContent = '+' + set.kg;
+      node.appendChild(kg);
+    }
+  }
+
+  /* Les origines présentes dans une journée, dans l'ordre où elles arrivent. */
+  function daySources(sets) {
+    var tags = [];
+    for (var i = 0; i < sets.length; i++) {
+      var tag = SOURCES[sets[i].src].tag;
+      if (tags.indexOf(tag) === -1) tags.push(tag);
+    }
+    return tags;
+  }
+
   /* ------------------------------------------------------------- stockage */
 
   function normalizeSets(input) {
@@ -105,7 +277,7 @@
       if (seen[id]) { rejected++; continue; }
       seen[id] = true;
 
-      out.push({ id: id, date: raw.date, reps: reps, kg: kg, ts: ts });
+      out.push({ id: id, date: raw.date, reps: reps, kg: kg, ts: ts, src: normalizeSource(raw.src) });
     }
 
     out.sort(function (a, b) {
@@ -116,14 +288,122 @@
     return { sets: out, rejected: rejected };
   }
 
+  /* Trois façons de s'entraîner. Une série sans origine — fichier d'avant la
+     version 4 — est une série libre. */
+  var SOURCES = {
+    libre:     { tag: 'Libre',        short: 'Libre',  cls: 'libre' },
+    programme: { tag: '50 tractions', short: '50 tr.', cls: 'prog' },
+    emom:      { tag: 'EMOM',         short: 'EMOM',   cls: 'emom' }
+  };
+
+  function normalizeSource(v) {
+    return SOURCES[v] ? v : 'libre';
+  }
+
   function normalizeGoal(v) {
     var g = Math.floor(Number(v));
     return isFinite(g) && g >= 1 && g <= MAX_GOAL ? g : DEFAULT_GOAL;
   }
 
+  function emptyProg() {
+    /* mode null : le mode n'a jamais été choisi, l'app demande le niveau. */
+    return { mode: null, level: 0, day: 0, test: null, done: null, last: null, session: null };
+  }
+
+  function int(v, lo, hi, fallback) {
+    var n = Math.floor(Number(v));
+    return isFinite(n) ? clamp(n, lo, hi) : fallback;
+  }
+
+  /* Un programme relu doit toujours désigner un jour qui existe : le nombre de
+     journées change d'un cycle à l'autre. */
+  function normalizeProg(raw) {
+    var p = emptyProg();
+    if (!raw || typeof raw !== 'object') return p;
+
+    p.mode = SOURCES[raw.mode] ? raw.mode : null;
+    p.level = int(raw.level, 0, LAST_LEVEL, 0);
+    p.day = int(raw.day, 0, LEVELS[p.level].days.length - 1, 0);
+    p.test = raw.test === null || raw.test === undefined ? null : int(raw.test, 0, MAX_REPS, null);
+    p.done = isValidISO(raw.done) ? raw.done : null;
+
+    if (raw.last && typeof raw.last === 'object' && isValidISO(raw.last.date)) {
+      var lastLevel = int(raw.last.level, 0, LAST_LEVEL, 0);
+      p.last = {
+        date: raw.last.date,
+        level: lastLevel,
+        day: int(raw.last.day, 0, LEVELS[lastLevel].days.length - 1, 0),
+        ok: raw.last.ok === true
+      };
+    }
+
+    var s = raw.session;
+    if (s && typeof s === 'object' && Array.isArray(s.reps)) {
+      var level = int(s.level, 0, LAST_LEVEL, 0);
+      var day = int(s.day, 0, LEVELS[level].days.length - 1, 0);
+      var reps = [];
+      for (var i = 0; i < s.reps.length && i < 5; i++) {
+        reps.push(int(s.reps[i], 0, MAX_REPS, 0));
+      }
+      /* Un repos déjà écoulé, ou une échéance absurde, se règle à zéro. */
+      var until = int(s.until, 0, 8640000000000000, 0);
+      p.session = {
+        level: level,
+        day: day,
+        reps: reps,
+        until: until > Date.now() ? until : 0
+      };
+    }
+
+    return p;
+  }
+
+  /* ------------------------------------------------------------------ EMOM
+
+     Every Minute On the Minute : une série au début de chaque minute, le
+     reste de la minute sert de repos. Le chrono ne s'arrête jamais.        */
+
+  var EMOM_MINUTE = 60000;
+  var MAX_ROUNDS = 60;
+
+  function emptyEmom() {
+    return { reps: 5, rounds: 10, session: null };
+  }
+
+  function normalizeEmom(raw) {
+    var e = emptyEmom();
+    if (!raw || typeof raw !== 'object') return e;
+
+    e.reps = int(raw.reps, 1, MAX_REPS, e.reps);
+    e.rounds = int(raw.rounds, 1, MAX_ROUNDS, e.rounds);
+
+    var s = raw.session;
+    if (s && typeof s === 'object' && Array.isArray(s.done)) {
+      var rounds = int(s.rounds, 1, MAX_ROUNDS, e.rounds);
+      var start = int(s.start, 1, 8640000000000000, 0);
+      var done = [];
+      for (var i = 0; i < s.done.length && i < rounds; i++) {
+        done.push(int(s.done[i], 0, MAX_REPS, 0));
+      }
+      /* Sans départ lisible, la séance n'a plus de chrono : elle est perdue. */
+      if (start > 0) {
+        e.session = {
+          reps: int(s.reps, 1, MAX_REPS, e.reps),
+          rounds: rounds,
+          start: start,
+          done: done
+        };
+      }
+    }
+
+    return e;
+  }
+
   /* Lecture défensive : rien, JSON cassé ou schéma faux ⇒ état vide. */
   function load() {
-    var empty = { version: SCHEMA, goal: DEFAULT_GOAL, sets: [] };
+    var empty = {
+      version: SCHEMA, goal: DEFAULT_GOAL, sets: [], prog: emptyProg(), emom: emptyEmom()
+    };
     var raw;
     try { raw = localStorage.getItem(KEY); } catch (e) { return empty; }
     if (!raw) return empty;
@@ -135,7 +415,9 @@
     return {
       version: SCHEMA,
       goal: normalizeGoal(parsed.goal),
-      sets: normalizeSets(parsed.sets).sets
+      sets: normalizeSets(parsed.sets).sets,
+      prog: normalizeProg(parsed.prog),
+      emom: normalizeEmom(parsed.emom)
     };
   }
 
@@ -145,8 +427,10 @@
     return JSON.stringify({
       version: SCHEMA,
       goal: state.goal,
+      prog: state.prog,
+      emom: { reps: state.emom.reps, rounds: state.emom.rounds, session: state.emom.session },
       sets: state.sets.map(function (s) {
-        return { id: s.id, date: s.date, reps: s.reps, kg: s.kg, ts: s.ts };
+        return { id: s.id, date: s.date, reps: s.reps, kg: s.kg, ts: s.ts, src: s.src };
       })
     }, null, 2);
   }
@@ -361,6 +645,71 @@
     daySub: $('daySub'),
     dayRows: $('dayRows'),
     deleteDay: $('deleteDay'),
+    modeBtns: Array.prototype.slice.call(document.querySelectorAll('.modebtn')),
+    freeTraining: $('freeTraining'),
+    progTraining: $('progTraining'),
+    progLevel: $('progLevel'),
+    progDay: $('progDay'),
+    progTargets: $('progTargets'),
+    progNote: $('progNote'),
+    progRest: $('progRest'),
+    startBtn: $('startSession'),
+    sessionPage: $('sessionPage'),
+    sessionBack: $('sessionBack'),
+    sessionTitle: $('sessionTitle'),
+    sessionSub: $('sessionSub'),
+    stepSet: $('stepSet'),
+    stepRest: $('stepRest'),
+    stepDone: $('stepDone'),
+    sessStep: $('sessStep'),
+    sessTarget: $('sessTarget'),
+    sessHint: $('sessHint'),
+    sessReps: $('sessReps'),
+    validateSet: $('validateSet'),
+    restClock: $('restClock'),
+    restRing: $('restRing'),
+    restNext: $('restNext'),
+    skipRest: $('skipRest'),
+    sessVerdict: $('sessVerdict'),
+    sessRecap: $('sessRecap'),
+    sessAfter: $('sessAfter'),
+    finishSession: $('finishSession'),
+    quitSession: $('quitSession'),
+    emomTraining: $('emomTraining'),
+    emomReps: $('emomRepsCfg'),
+    emomRounds: $('emomRoundsCfg'),
+    emomTotal: $('emomTotal'),
+    startEmom: $('startEmom'),
+    emomPage: $('emomPage'),
+    emomBack: $('emomBack'),
+    emomTitle: $('emomTitle'),
+    emomSub: $('emomSub'),
+    emomRun: $('emomRun'),
+    emomEnd: $('emomEnd'),
+    emomStep: $('emomStep'),
+    emomRing: $('emomRing'),
+    emomClock: $('emomClock'),
+    emomEntry: $('emomEntry'),
+    emomWait: $('emomWait'),
+    emomHint: $('emomHint'),
+    emomWaitHint: $('emomWaitHint'),
+    emomInput: $('emomInput'),
+    emomLog: $('emomLog'),
+    emomDone: $('emomDone'),
+    emomQuit: $('emomQuit'),
+    emomVerdict: $('emomVerdict'),
+    emomRecapText: $('emomRecapText'),
+    emomRecap: $('emomRecap'),
+    emomFinish: $('emomFinish'),
+    setupPage: $('setupPage'),
+    setupClose: $('setupClose'),
+    setupScore: $('setupScore'),
+    setupLevel: $('setupLevel'),
+    chooseProg: $('chooseProg'),
+    chooseFree: $('chooseFree'),
+    progAdmin: $('progAdmin'),
+    retestBtn: $('retestBtn'),
+    resetProg: $('resetProg'),
     resetBtn: $('resetBtn'),
     exportBtn: $('exportBtn'),
     importBtn: $('importBtn'),
@@ -428,14 +777,7 @@
 
     for (var i = 0; i < list.length; i++) {
       var li = document.createElement('li');
-      li.className = list[i].id === freshPillId ? 'pill pill--new' : 'pill';
-      li.textContent = fmt(list[i].reps);
-      if (list[i].kg > 0) {
-        var kg = document.createElement('span');
-        kg.className = 'pill-kg';
-        kg.textContent = '+' + list[i].kg;
-        li.appendChild(kg);
-      }
+      fillPill(li, list[i], list[i].id === freshPillId ? 'pill--new' : '');
       el.todaySets.appendChild(li);
     }
     freshPillId = null;
@@ -604,15 +946,27 @@
       var head = document.createElement('span');
       head.className = 'journal-head';
 
+      var left = document.createElement('span');
+      left.className = 'journal-left';
+
       var date = document.createElement('span');
       date.className = 'journal-date';
       date.textContent = capitalize(longDate(day.date));
+
+      /* L'origine des séries, sous la date : libre, programme, EMOM, ou
+         plusieurs si la journée a mélangé. */
+      var src = document.createElement('span');
+      src.className = 'journal-src';
+      src.textContent = daySources(day.sets).join(' · ');
+
+      left.appendChild(date);
+      left.appendChild(src);
 
       var total = document.createElement('span');
       total.className = 'journal-total';
       total.textContent = fmt(day.total);
 
-      head.appendChild(date);
+      head.appendChild(left);
       head.appendChild(total);
 
       /* Mêmes étiquettes que dans Training : une pastille par série,
@@ -622,14 +976,7 @@
 
       for (var k = 0; k < day.sets.length; k++) {
         var pill = document.createElement('span');
-        pill.className = 'pill';
-        pill.textContent = fmt(day.sets[k].reps);
-        if (day.sets[k].kg > 0) {
-          var kg = document.createElement('span');
-          kg.className = 'pill-kg';
-          kg.textContent = '+' + day.sets[k].kg;
-          pill.appendChild(kg);
-        }
+        fillPill(pill, day.sets[k], '');
         pills.appendChild(pill);
       }
 
@@ -663,10 +1010,20 @@
       var row = document.createElement('div');
       row.className = 'day-row';
 
+      var meta = document.createElement('span');
+      meta.className = 'day-meta';
+
       var time = document.createElement('span');
       time.className = 'day-time';
       time.textContent = new Date(s.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      row.appendChild(time);
+
+      var src = document.createElement('span');
+      src.className = 'day-src day-src--' + SOURCES[s.src].cls;
+      src.textContent = SOURCES[s.src].short;
+
+      meta.appendChild(time);
+      meta.appendChild(src);
+      row.appendChild(meta);
 
       row.appendChild(field('Tractions', 'reps', s.id, s.reps, 3));
       row.appendChild(field('Charge kg', 'kg', s.id, s.kg, 3));
@@ -741,6 +1098,297 @@
     }
   }
 
+  /* --------------------------------------------------- programme : rendu */
+
+  /* Jours de repos encore conseillés avant la prochaine séance. */
+  function restLeft() {
+    var p = state.prog;
+    if (!p.done || !p.last) return 0;
+    var pause = LEVELS[p.last.level].days[p.last.day].pause;
+    var next = addDays(fromISO(p.done), pause);
+    var days = Math.round((next - fromISO(todayISO())) / 86400000);
+    return Math.max(0, days);
+  }
+
+  function renderProgram() {
+    var p = state.prog;
+    var lvl = levelOf(p);
+    var day = dayOf(p);
+    var i;
+
+    /* Tant que le mode n'est pas choisi, c'est le compteur libre qui tient
+       l'écran derrière la page du test. */
+    var mode = p.mode || 'libre';
+
+    el.modeBtns.forEach(function (b) {
+      var on = b.dataset.mode === mode;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+      b.tabIndex = on ? 0 : -1;
+    });
+
+    el.freeTraining.hidden = mode !== 'libre';
+    el.progTraining.hidden = mode !== 'programme';
+    el.emomTraining.hidden = mode !== 'emom';
+    if (mode !== 'programme') return;
+
+    el.progLevel.textContent = 'Niveau ' + (p.level + 1) + ' · ' + lvl.name;
+    el.progDay.textContent = 'Jour ' + (p.day + 1) + ' sur ' + lvl.days.length;
+
+    el.progTargets.textContent = '';
+    for (i = 0; i < day.sets.length; i++) {
+      var li = document.createElement('li');
+      li.className = 'prog-target';
+      var rank = document.createElement('span');
+      rank.className = 'prog-rank';
+      rank.textContent = 'S' + (i + 1);
+      var value = document.createElement('b');
+      value.textContent = targetLabel(day.sets[i]);
+      li.appendChild(rank);
+      li.appendChild(value);
+      el.progTargets.appendChild(li);
+    }
+
+    el.progNote.textContent = lvl.rest + ' s de repos entre les séries.';
+
+    /* Le repos conseillé et le sort de la dernière séance, dans la même ligne :
+       c'est ce qui explique pourquoi le jour affiché a bougé — ou pas. */
+    var left = restLeft();
+    var parts = [];
+    if (p.last) {
+      parts.push(p.last.ok
+        ? 'Dernière séance validée.'
+        : 'Dernière séance manquée : ce jour est à refaire.');
+    }
+    if (left > 0) {
+      parts.push('Repos conseillé : encore ' + left + ' jour' + plural(left) + '.');
+    }
+    el.progRest.textContent = parts.join(' ');
+    el.progRest.hidden = parts.length === 0;
+
+    el.startBtn.textContent = p.session
+      ? 'Reprendre la séance'
+      : 'Démarrer un entraînement';
+  }
+
+  function clockText(ms) {
+    var s = Math.ceil(ms / 1000);
+    return Math.floor(s / 60) + ':' + pad2(s % 60);
+  }
+
+  /* ------------------------------------------------------- EMOM : rendu */
+
+  function renderEmomCard() {
+    var e = state.emom;
+    el.emomReps.value = String(e.reps);
+    el.emomRounds.value = String(e.rounds);
+    el.emomTotal.textContent = 'Séance prévue : ' + fmt(e.reps * e.rounds) +
+      ' tractions en ' + e.rounds + ' minute' + plural(e.rounds) + '.';
+    el.startEmom.textContent = e.session ? 'Reprendre l’EMOM' : 'Démarrer l’EMOM';
+  }
+
+  /* La minute en cours, d'après le chrono : c'est lui qui mène la séance. */
+  function emomMinute(s) {
+    return Math.floor((Date.now() - s.start) / EMOM_MINUTE);
+  }
+
+  function renderEmomSession() {
+    var s = state.emom.session;
+    if (!s) return;
+
+    var minute = emomMinute(s);
+    var over = s.done.length >= s.rounds;
+    /* Série validée avant la fin de la minute : on attend la suivante. */
+    var waiting = !over && s.done.length > minute;
+
+    el.emomTitle.textContent = 'EMOM · ' + s.reps + ' × ' + s.rounds;
+    el.emomSub.textContent = over
+      ? 'Séance terminée'
+      : 'Minute ' + Math.min(s.done.length + 1, s.rounds) + ' sur ' + s.rounds;
+
+    el.emomRun.hidden = over;
+    el.emomEnd.hidden = !over;
+
+    if (over) {
+      renderEmomEnd(s);
+      stopEmomTick();
+      return;
+    }
+
+    el.emomStep.textContent = waiting
+      ? 'Prochaine série dans'
+      : 'Minute ' + (s.done.length + 1) + ' / ' + s.rounds;
+    el.emomEntry.hidden = waiting;
+    el.emomWait.hidden = !waiting;
+
+    if (waiting) {
+      var last = s.done[s.done.length - 1];
+      el.emomWaitHint.textContent = fmt(last) + ' traction' + plural(last) +
+        ' enregistrée' + plural(last) + '. Souffle.';
+    } else {
+      el.emomHint.textContent = 'Objectif : ' + fmt(s.reps) + ' traction' + plural(s.reps) +
+        '. La minute se referme seule sur le nombre affiché.';
+    }
+
+    if (document.activeElement !== el.emomInput && !waiting) {
+      el.emomInput.value = String(s.reps);
+    }
+
+    fillRounds(el.emomDone, s);
+    tickEmom();
+    startEmomTick();
+  }
+
+  /* Les minutes déjà faites, en pastilles : ambre si l'objectif est tenu. */
+  function fillRounds(node, s) {
+    node.textContent = '';
+    for (var i = 0; i < s.done.length; i++) {
+      var li = document.createElement('li');
+      li.className = s.done[i] >= s.reps ? 'pill pill--emom is-hit' : 'pill pill--emom';
+      li.textContent = fmt(s.done[i]);
+      node.appendChild(li);
+    }
+  }
+
+  function renderEmomEnd(s) {
+    var total = 0;
+    var hits = 0;
+    for (var i = 0; i < s.done.length; i++) {
+      total += s.done[i];
+      if (s.done[i] >= s.reps) hits++;
+    }
+    var full = hits === s.rounds;
+
+    el.emomVerdict.textContent = full ? 'EMOM tenu' : 'EMOM terminé';
+    el.emomVerdict.classList.toggle('is-ok', full);
+    el.emomRecapText.textContent = fmt(total) + ' tractions en ' + s.rounds +
+      ' minute' + plural(s.rounds) + ' · ' + hits + ' minute' + plural(hits) +
+      ' sur ' + s.rounds + ' à l’objectif de ' + fmt(s.reps) + '.';
+    fillRounds(el.emomRecap, s);
+  }
+
+  function renderSession() {
+    var s = state.prog.session;
+    if (!s) return;
+
+    var lvl = LEVELS[s.level];
+    var day = lvl.days[s.day];
+    var i = s.reps.length;                 /* série en cours, 0 à 5 */
+    var over = i >= day.sets.length;
+    /* Un repos échu n'est plus un repos : à la reprise d'une séance laissée
+       de côté, la saisie doit revenir tout de suite, sans attendre le
+       prochain battement d'horloge. */
+    var resting = !over && s.until > Date.now();
+
+    /* Le sous-titre donne la séance entière d'un coup d'œil ; l'étape en cours
+       est dite par le corps de la page. */
+    el.sessionTitle.textContent = 'Jour ' + (s.day + 1) + ' · ' + lvl.name;
+    el.sessionSub.textContent = over
+      ? 'Séance terminée'
+      : day.sets.map(targetLabel).join(' · ');
+
+    el.stepSet.hidden = over || resting;
+    el.stepRest.hidden = over || !resting;
+    el.stepDone.hidden = !over;
+    /* Une séance achevée ne s'abandonne plus : ses séries sont enregistrées,
+       il ne reste qu'à en tirer le bilan. */
+    el.quitSession.hidden = over;
+
+    /* Toujours réécrit, même masqué : aucun libellé d'une série précédente ne
+       doit pouvoir réapparaître. */
+    if (!over) el.sessStep.textContent = 'Série ' + (i + 1) + ' / ' + day.sets.length;
+
+    if (!over && !resting) {
+      var t = target(day.sets[i]);
+      el.sessTarget.textContent = targetLabel(day.sets[i]);
+      el.sessHint.textContent = t.open
+        ? 'Série à l’épuisement : au moins ' + t.min + ' pour valider.'
+        : 'Objectif de la série.';
+      if (document.activeElement !== el.sessReps) el.sessReps.value = String(t.min);
+    }
+
+    if (resting) {
+      el.restNext.textContent = 'Prochaine série : ' + targetLabel(day.sets[i]);
+      tickRest();
+      startRestTick();
+    } else {
+      stopRestTick();
+    }
+
+    if (over) renderVerdict(s, lvl, day);
+  }
+
+  function sessionOk(s, day) {
+    for (var i = 0; i < day.sets.length; i++) {
+      if (s.reps[i] < target(day.sets[i]).min) return false;
+    }
+    return true;
+  }
+
+  function renderVerdict(s, lvl, day) {
+    var ok = sessionOk(s, day);
+    var lastDay = s.day >= lvl.days.length - 1;
+
+    el.sessVerdict.textContent = ok ? 'Objectif rempli' : 'Objectif manqué';
+    el.sessVerdict.classList.toggle('is-ok', ok);
+
+    el.sessRecap.textContent = '';
+    for (var i = 0; i < day.sets.length; i++) {
+      var t = target(day.sets[i]);
+      var hit = s.reps[i] >= t.min;
+
+      var li = document.createElement('li');
+      li.className = hit ? 'recap-row is-hit' : 'recap-row';
+
+      var rank = document.createElement('span');
+      rank.className = 'prog-rank';
+      rank.textContent = 'S' + (i + 1);
+
+      var got = document.createElement('b');
+      got.textContent = fmt(s.reps[i]);
+
+      var goal = document.createElement('span');
+      goal.className = 'recap-goal';
+      goal.textContent = '/ ' + targetLabel(day.sets[i]);
+
+      li.appendChild(rank);
+      li.appendChild(got);
+      li.appendChild(goal);
+      el.sessRecap.appendChild(li);
+    }
+
+    if (!ok) {
+      el.sessAfter.textContent = 'Le jour ' + (s.day + 1) + ' sera à refaire ' +
+        'à la prochaine séance.';
+    } else if (!lastDay) {
+      el.sessAfter.textContent = 'Prochaine séance : jour ' + (s.day + 2) +
+        ' du niveau ' + (s.level + 1) + '.';
+    } else if (s.level < LAST_LEVEL) {
+      el.sessAfter.textContent = 'Cycle terminé : passage au niveau ' + (s.level + 2) +
+        ' · ' + LEVELS[s.level + 1].name + '.';
+    } else {
+      el.sessAfter.textContent = 'Dernier cycle terminé. Refais le test pour ' +
+        'te resituer.';
+    }
+  }
+
+  function renderSetup() {
+    var n = int(el.setupScore.value, 0, MAX_REPS, 0);
+    var lvl = LEVELS[levelForScore(n)];
+    el.setupLevel.textContent = 'Cycle ' + (levelForScore(n) + 1) + ' · ' + lvl.name;
+  }
+
+  function renderProgAdmin() {
+    var p = state.prog;
+    if (p.mode === null) {
+      el.progAdmin.textContent = 'Aucun niveau défini pour l’instant.';
+      return;
+    }
+    el.progAdmin.textContent = 'Niveau ' + (p.level + 1) + ' · ' + levelOf(p).name +
+      ' · jour ' + (p.day + 1) + ' sur ' + levelOf(p).days.length +
+      (p.test === null ? '' : ' · test : ' + fmt(p.test) + ' traction' + plural(p.test));
+  }
+
   function renderAdmin() {
     if (document.activeElement !== el.goalInput) el.goalInput.value = String(state.goal);
     disarmReset();
@@ -753,8 +1401,13 @@
     renderJournal();
     renderChart();
     renderEntry();
+    renderProgram();
+    renderEmomCard();
+    renderProgAdmin();
     renderAdmin();
     if (!el.dayPage.hidden) renderDay();
+    if (!el.sessionPage.hidden) renderSession();
+    if (!el.emomPage.hidden) renderEmomSession();
   }
 
   /* -------------------------------------------------------------- actions */
@@ -807,7 +1460,7 @@
     /* Une série est toujours celle du jour : pas de saisie rétroactive. */
     var iso = todayISO();
     var before = totalFor(iso);
-    var set = { id: uid(), date: iso, reps: reps, kg: loadKg, ts: Date.now() };
+    var set = { id: uid(), date: iso, reps: reps, kg: loadKg, ts: Date.now(), src: 'libre' };
 
     state.sets.push(set);
     freshPillId = set.id;
@@ -818,6 +1471,266 @@
     toast(crossed
       ? 'Série enregistrée, objectif franchi !'
       : 'Série enregistrée' + (loadKg > 0 ? ' à +' + loadKg + ' kg.' : '.'));
+  }
+
+  /* ------------------------------------------------ programme : actions */
+
+  var restTimer = null;
+
+  /* Le compte à rebours n'est qu'un affichage. L'état n'est réécrit qu'au
+     moment précis où le repos s'achève, dans watchRest. */
+  function tickRest() {
+    var s = state.prog.session;
+    if (!s || !s.until) return;
+    var total = LEVELS[s.level].rest * 1000;
+    var left = Math.max(0, s.until - Date.now());
+    el.restClock.textContent = clockText(left);
+    el.restRing.style.setProperty('--rest', clamp(1 - left / total, 0, 1).toFixed(3));
+  }
+
+  function watchRest() {
+    var s = state.prog.session;
+    if (!s || !s.until) { stopRestTick(); return; }
+    if (s.until > Date.now()) { tickRest(); return; }
+
+    s.until = 0;
+    stopRestTick();
+    commit();
+    ready();
+  }
+
+  function startRestTick() { if (!restTimer) restTimer = setInterval(watchRest, 250); }
+  function stopRestTick() { if (restTimer) { clearInterval(restTimer); restTimer = null; } }
+
+  /* Le repos vient de finir : un signal visuel, l'écran n'est pas forcément
+     sous les yeux. */
+  function ready() {
+    if (calm || el.stepSet.hidden) return;
+    el.stepSet.classList.remove('is-ready');
+    void el.stepSet.offsetWidth;
+    el.stepSet.classList.add('is-ready');
+    setTimeout(function () { el.stepSet.classList.remove('is-ready'); }, 1400);
+  }
+
+  function setMode(mode) {
+    state.prog.mode = mode;
+    commit();
+  }
+
+  function startSession() {
+    var p = state.prog;
+    if (!p.session) {
+      p.session = { level: p.level, day: p.day, reps: [], until: 0 };
+      commit();
+    }
+    openSession();
+  }
+
+  /* Une série du programme est une série comme une autre : elle nourrit le
+     journal, les records et l'évolution. */
+  function validateSet() {
+    var s = state.prog.session;
+    if (!s) return;
+
+    var day = LEVELS[s.level].days[s.day];
+    if (s.reps.length >= day.sets.length) return;
+
+    var reps = int(el.sessReps.value, 0, MAX_REPS, 0);
+    if (reps < 1) {
+      toast('Indique au moins 1 traction.');
+      el.sessReps.focus();
+      return;
+    }
+
+    var iso = todayISO();
+    var before = totalFor(iso);
+    state.sets.push({ id: uid(), date: iso, reps: reps, kg: 0, ts: Date.now(), src: 'programme' });
+
+    s.reps.push(reps);
+    /* Pas de repos après la dernière série : la séance est finie. */
+    s.until = s.reps.length < day.sets.length
+      ? Date.now() + LEVELS[s.level].rest * 1000
+      : 0;
+
+    commit();
+
+    if (state.goal > 0 && before < state.goal && before + reps >= state.goal) {
+      toast('Série enregistrée, objectif du jour franchi !');
+    }
+  }
+
+  function skipRest() {
+    var s = state.prog.session;
+    if (!s || !s.until) return;
+    s.until = 0;
+    stopRestTick();
+    commit();
+  }
+
+  /* Fin de séance : objectif rempli, on avance d'un jour — et de niveau au
+     bout du cycle. Objectif manqué, le même jour revient. */
+  function finishSession() {
+    var p = state.prog;
+    var s = p.session;
+    if (!s) return;
+
+    var lvl = LEVELS[s.level];
+    var day = lvl.days[s.day];
+    var ok = sessionOk(s, day);
+
+    p.last = { date: todayISO(), level: s.level, day: s.day, ok: ok };
+    p.done = todayISO();
+    p.session = null;
+
+    var levelled = false;
+    if (ok) {
+      if (s.day < lvl.days.length - 1) {
+        p.level = s.level;
+        p.day = s.day + 1;
+      } else if (s.level < LAST_LEVEL) {
+        p.level = s.level + 1;
+        p.day = 0;
+        levelled = true;
+      } else {
+        p.level = s.level;
+        p.day = s.day;                 /* dernier cycle : on reste sur place */
+      }
+    } else {
+      p.level = s.level;
+      p.day = s.day;
+    }
+
+    commit();
+    closeSession();
+    toast(levelled
+      ? 'Cycle terminé : niveau ' + (p.level + 1) + ' · ' + LEVELS[p.level].name + ' !'
+      : ok ? 'Séance validée.' : 'Séance manquée : ce jour est à refaire.');
+  }
+
+  function quitSession() {
+    state.prog.session = null;
+    stopRestTick();
+    commit();
+    closeSession();
+    toast('Séance abandonnée.');
+  }
+
+  /* ------------------------------------------------------ EMOM : actions */
+
+  var emomTimer = null;
+
+  function readEmomReps() { return int(el.emomInput.value, 0, MAX_REPS, 0); }
+
+  /* Le chrono n'est qu'un affichage : il compte le temps qui reste sur la
+     minute en cours, que l'on soit en train de tirer ou de souffler. */
+  function tickEmom() {
+    var s = state.emom.session;
+    if (!s) return;
+    var left = EMOM_MINUTE - ((Date.now() - s.start) % EMOM_MINUTE);
+    el.emomClock.textContent = clockText(left);
+    el.emomRing.style.setProperty('--rest', (1 - left / EMOM_MINUTE).toFixed(3));
+  }
+
+  /* Le chrono mène : chaque minute écoulée ferme sa série, validée ou non.
+     Celle qui vient de s'achever prend le nombre affiché, les minutes
+     entièrement passées à côté prennent l'objectif. */
+  function watchEmom() {
+    var s = state.emom.session;
+    if (!s) { stopEmomTick(); return; }
+
+    var minute = emomMinute(s);
+    var upto = Math.min(minute, s.rounds);
+    var changed = false;
+
+    while (s.done.length < upto) {
+      var justEnded = s.done.length === upto - 1 && upto === minute;
+      logRound(justEnded ? readEmomReps() : s.reps);
+      changed = true;
+    }
+
+    if (changed) { commit(); return; }
+
+    /* La minute peut tourner sans rien fermer : une série validée en avance
+       attend la suivante. Le chrono seul ne rend pas la main à la saisie,
+       c'est ici que l'écran doit changer. */
+    var waiting = s.done.length > minute && s.done.length < s.rounds;
+    if (waiting === el.emomWait.hidden) { renderEmomSession(); return; }
+
+    tickEmom();
+  }
+
+  function startEmomTick() { if (!emomTimer) emomTimer = setInterval(watchEmom, 250); }
+  function stopEmomTick() { if (emomTimer) { clearInterval(emomTimer); emomTimer = null; } }
+
+  /* Une minute d'EMOM est une série comme une autre : elle part au journal. */
+  function logRound(reps) {
+    var s = state.emom.session;
+    s.done.push(clamp(reps, 0, MAX_REPS));
+    if (reps < 1) return;
+    state.sets.push({
+      id: uid(), date: todayISO(), reps: clamp(reps, 1, MAX_REPS),
+      kg: 0, ts: Date.now(), src: 'emom'
+    });
+  }
+
+  function startEmom() {
+    var e = state.emom;
+    if (!e.session) {
+      e.session = { reps: e.reps, rounds: e.rounds, start: Date.now(), done: [] };
+      commit();
+    }
+    openEmom();
+  }
+
+  function validateRound() {
+    var s = state.emom.session;
+    if (!s || s.done.length >= s.rounds) return;
+    /* Série déjà validée pour cette minute : on ne la compte pas deux fois. */
+    if (s.done.length > emomMinute(s)) return;
+
+    logRound(readEmomReps());
+    commit();
+  }
+
+  function finishEmom() {
+    state.emom.session = null;
+    stopEmomTick();
+    commit();
+    closeEmom();
+    toast('EMOM terminé.');
+  }
+
+  /* Arrêt en cours de route : les séries déjà faites restent au journal. */
+  function quitEmom() {
+    state.emom.session = null;
+    stopEmomTick();
+    commit();
+    closeEmom();
+    toast('EMOM arrêté.');
+  }
+
+  function setEmom(key, value) {
+    state.emom[key] = clamp(value, 1, key === 'rounds' ? MAX_ROUNDS : MAX_REPS);
+    commit();
+  }
+
+  /* Le test initial fixe le cycle et remet la progression à son premier jour. */
+  function applyTest(mode) {
+    var score = int(el.setupScore.value, 0, MAX_REPS, 0);
+    var p = state.prog;
+    p.test = score;
+    p.level = levelForScore(score);
+    p.day = 0;
+    p.done = null;
+    p.last = null;
+    p.session = null;
+    p.mode = mode;
+    stopRestTick();
+    closeSetup();
+    commit();
+    toast(mode === 'programme'
+      ? 'Cycle ' + (p.level + 1) + ' · ' + LEVELS[p.level].name + '.'
+      : 'Entraînement libre. Le programme t’attend dans Training.');
   }
 
   function removeSet(id) {
@@ -887,12 +1800,13 @@
         showBackupNote('Fichier invalide : le contenu attendu est un objet JSON.', true);
         return;
       }
-      /* Les fichiers d'avant la charge (version 1) restent lisibles. */
+      /* Les fichiers d'avant la charge (version 1) et d'avant le programme
+         (version 2) restent lisibles. */
       var fileVersion = parsed.version === undefined ? SCHEMA : Number(parsed.version);
-      if (!(fileVersion === 1 || fileVersion === SCHEMA)) {
+      if (!(fileVersion >= 1 && fileVersion <= SCHEMA && fileVersion === Math.floor(fileVersion))) {
         resetImport();
         showBackupNote('Fichier invalide : version « ' + parsed.version + ' » inconnue, ' +
-          'versions 1 et ' + SCHEMA + ' acceptées.', true);
+          'versions 1 à ' + SCHEMA + ' acceptées.', true);
         return;
       }
       if (!Array.isArray(parsed.sets)) {
@@ -910,10 +1824,18 @@
         return;
       }
 
-      pendingImport = { sets: result.sets, goal: normalizeGoal(parsed.goal) };
+      pendingImport = {
+        sets: result.sets,
+        goal: normalizeGoal(parsed.goal),
+        /* Un fichier d'avant le programme n'en porte pas : le remplacement
+           laissera alors la progression en place. */
+        prog: parsed.prog ? normalizeProg(parsed.prog) : null,
+        emom: parsed.emom ? normalizeEmom(parsed.emom) : null
+      };
       var msg = result.sets.length + ' série' + plural(result.sets.length) + ' lue' +
         plural(result.sets.length) + ', objectif ' + pendingImport.goal + '.';
       if (fileVersion === 1) msg += ' Fichier sans charge : les séries sont reprises à 0 kg.';
+      if (pendingImport.prog) msg += ' Le fichier porte une progression de programme.';
       if (result.rejected) {
         msg += ' ' + result.rejected + ' entrée' + plural(result.rejected) + ' ignorée' +
           plural(result.rejected) + ' (format invalide).';
@@ -955,9 +1877,18 @@
     var count = pendingImport.sets.length;
     state.sets = pendingImport.sets;
     state.goal = pendingImport.goal;
+    if (pendingImport.prog) {
+      state.prog = pendingImport.prog;
+      stopRestTick();
+    }
+    if (pendingImport.emom) {
+      state.emom = pendingImport.emom;
+      stopEmomTick();
+    }
     resetImport();
     showBackupNote('Historique remplacé : ' + count + ' série' + plural(count) + '.', false);
     commit();
+    if (state.prog.mode === null) openSetup();
   }
 
   /* ------------------------------------------------- navigation à 3 vues */
@@ -986,18 +1917,44 @@
 
   function syncRoute() {
     openDay = dayFromHash();
-    var open = openDay !== null && setsFor(openDay).length > 0;
+    var dayOpen = openDay !== null && setsFor(openDay).length > 0;
+    /* Une séance ne s'ouvre que si elle existe : une adresse copiée-collée
+       ne fabrique pas d'entraînement. */
+    var sessionOpen = location.hash === '#seance' && state.prog.session !== null;
+    var emomOpen = location.hash === '#emom' && state.emom.session !== null;
 
-    el.dayPage.hidden = !open;
-    document.body.classList.toggle('is-locked', open);
+    el.dayPage.hidden = !dayOpen;
+    el.sessionPage.hidden = !sessionOpen;
+    el.emomPage.hidden = !emomOpen;
+    lockBody();
 
-    if (open) {
+    if (dayOpen) {
       renderDay();
       el.dayBack.focus();
       window.scrollTo(0, 0);
     } else {
       openDay = null;
     }
+
+    if (sessionOpen) {
+      renderSession();
+      window.scrollTo(0, 0);
+    } else {
+      stopRestTick();
+    }
+
+    if (emomOpen) {
+      renderEmomSession();
+      window.scrollTo(0, 0);
+    } else {
+      stopEmomTick();
+    }
+  }
+
+  function lockBody() {
+    document.body.classList.toggle('is-locked',
+      !el.dayPage.hidden || !el.sessionPage.hidden || !el.emomPage.hidden ||
+      !el.setupPage.hidden);
   }
 
   function openDayPage(date) {
@@ -1007,6 +1964,43 @@
 
   function closeDayPage() {
     if (dayFromHash()) history.back();
+  }
+
+  function openSession() {
+    history.pushState({ session: true }, '', '#seance');
+    syncRoute();
+  }
+
+  function closeSession() {
+    if (location.hash === '#seance') history.back();
+    else syncRoute();
+  }
+
+  function openEmom() {
+    history.pushState({ emom: true }, '', '#emom');
+    syncRoute();
+  }
+
+  function closeEmom() {
+    if (location.hash === '#emom') history.back();
+    else syncRoute();
+  }
+
+  /* Le choix du niveau ne passe pas par l'adresse : c'est un passage obligé au
+     premier lancement, le bouton retour ne doit pas pouvoir l'esquiver. */
+  function openSetup() {
+    el.setupScore.value = String(state.prog.test === null ? 8 : state.prog.test);
+    el.setupPage.hidden = false;
+    el.setupClose.hidden = state.prog.mode === null;
+    lockBody();
+    renderSetup();
+    window.scrollTo(0, 0);
+    el.setupScore.focus();
+  }
+
+  function closeSetup() {
+    el.setupPage.hidden = true;
+    lockBody();
   }
 
   /* ------------------------------------------------------------ écouteurs */
@@ -1088,7 +2082,118 @@
   window.addEventListener('popstate', syncRoute);
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && !el.dayPage.hidden) closeDayPage();
+    if (e.key !== 'Escape') return;
+    if (!el.dayPage.hidden) closeDayPage();
+    else if (!el.sessionPage.hidden) closeSession();
+    else if (!el.emomPage.hidden) closeEmom();
+    else if (!el.setupPage.hidden && !el.setupClose.hidden) closeSetup();
+  });
+
+  /* ---------------------------------------------- programme : écouteurs */
+
+  el.modeBtns.forEach(function (btn, i) {
+    btn.addEventListener('click', function () { setMode(btn.dataset.mode); });
+    btn.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      var next = el.modeBtns[(i + (e.key === 'ArrowRight' ? 1 : -1) + el.modeBtns.length) %
+        el.modeBtns.length];
+      setMode(next.dataset.mode);
+      next.focus();
+    });
+  });
+
+  el.startBtn.addEventListener('click', startSession);
+  el.sessionBack.addEventListener('click', closeSession);
+  el.validateSet.addEventListener('click', validateSet);
+  el.skipRest.addEventListener('click', skipRest);
+  el.finishSession.addEventListener('click', finishSession);
+  el.quitSession.addEventListener('click', quitSession);
+
+  el.sessReps.addEventListener('input', function () {
+    var cleaned = el.sessReps.value.replace(/\D/g, '').slice(0, 3);
+    if (cleaned !== el.sessReps.value) el.sessReps.value = cleaned;
+  });
+  el.sessReps.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); validateSet(); }
+  });
+
+  $('sessDec').addEventListener('click', function () {
+    el.sessReps.value = String(clamp(int(el.sessReps.value, 0, MAX_REPS, 0) - 1, 0, MAX_REPS));
+  });
+  $('sessInc').addEventListener('click', function () {
+    el.sessReps.value = String(clamp(int(el.sessReps.value, 0, MAX_REPS, 0) + 1, 0, MAX_REPS));
+  });
+
+  /* --------------------------------------------------- EMOM : écouteurs */
+
+  el.startEmom.addEventListener('click', startEmom);
+  el.emomBack.addEventListener('click', closeEmom);
+  el.emomLog.addEventListener('click', validateRound);
+  el.emomFinish.addEventListener('click', finishEmom);
+  el.emomQuit.addEventListener('click', quitEmom);
+
+  el.emomInput.addEventListener('input', function () {
+    var cleaned = el.emomInput.value.replace(/\D/g, '').slice(0, 3);
+    if (cleaned !== el.emomInput.value) el.emomInput.value = cleaned;
+  });
+  el.emomInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); validateRound(); }
+  });
+
+  $('emomDec').addEventListener('click', function () {
+    el.emomInput.value = String(clamp(readEmomReps() - 1, 0, MAX_REPS));
+  });
+  $('emomInc').addEventListener('click', function () {
+    el.emomInput.value = String(clamp(readEmomReps() + 1, 0, MAX_REPS));
+  });
+
+  el.emomReps.addEventListener('input', function () {
+    var cleaned = el.emomReps.value.replace(/\D/g, '').slice(0, 3);
+    if (cleaned !== el.emomReps.value) el.emomReps.value = cleaned;
+    var n = parseInt(cleaned, 10);
+    if (isFinite(n) && n >= 1) setEmom('reps', n);
+  });
+  el.emomReps.addEventListener('blur', function () { el.emomReps.value = String(state.emom.reps); });
+
+  el.emomRounds.addEventListener('input', function () {
+    var cleaned = el.emomRounds.value.replace(/\D/g, '').slice(0, 2);
+    if (cleaned !== el.emomRounds.value) el.emomRounds.value = cleaned;
+    var n = parseInt(cleaned, 10);
+    if (isFinite(n) && n >= 1) setEmom('rounds', n);
+  });
+  el.emomRounds.addEventListener('blur', function () { el.emomRounds.value = String(state.emom.rounds); });
+
+  $('emomRepsDec').addEventListener('click', function () { setEmom('reps', state.emom.reps - 1); });
+  $('emomRepsInc').addEventListener('click', function () { setEmom('reps', state.emom.reps + 1); });
+  $('emomRoundsDec').addEventListener('click', function () { setEmom('rounds', state.emom.rounds - 1); });
+  $('emomRoundsInc').addEventListener('click', function () { setEmom('rounds', state.emom.rounds + 1); });
+
+  el.setupScore.addEventListener('input', function () {
+    var cleaned = el.setupScore.value.replace(/\D/g, '').slice(0, 3);
+    if (cleaned !== el.setupScore.value) el.setupScore.value = cleaned;
+    renderSetup();
+  });
+
+  $('setupDec').addEventListener('click', function () {
+    el.setupScore.value = String(clamp(int(el.setupScore.value, 0, MAX_REPS, 0) - 1, 0, MAX_REPS));
+    renderSetup();
+  });
+  $('setupInc').addEventListener('click', function () {
+    el.setupScore.value = String(clamp(int(el.setupScore.value, 0, MAX_REPS, 0) + 1, 0, MAX_REPS));
+    renderSetup();
+  });
+
+  el.chooseProg.addEventListener('click', function () { applyTest('programme'); });
+  el.chooseFree.addEventListener('click', function () { applyTest('libre'); });
+  el.setupClose.addEventListener('click', closeSetup);
+  el.retestBtn.addEventListener('click', openSetup);
+
+  el.resetProg.addEventListener('click', function () {
+    state.prog = emptyProg();
+    stopRestTick();
+    commit();
+    openSetup();
   });
 
   /* Modification directe dans les champs de la journée. */
@@ -1197,6 +2302,9 @@
   var dayStamp = todayISO();
   el.goalInput.value = String(state.goal);
   render();
+
+  /* Première connexion : le niveau se choisit avant toute chose. */
+  if (state.prog.mode === null) openSetup();
 
   /* Le jour peut changer pendant que l'app reste ouverte. */
   setInterval(function () {

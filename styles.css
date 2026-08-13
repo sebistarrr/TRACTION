@@ -383,6 +383,25 @@ button, input { font: inherit; color: inherit; }
   color: #FFC49B;
 }
 
+/* L'origine de la série se lit à sa couleur : orange en libre, ambre au
+   programme, cyan en EMOM. Le libellé reste dans l'attribut title. */
+.pill--prog {
+  border-color: rgba(255, 176, 46, .48);
+  background: rgba(255, 176, 46, .1);
+  color: #FFD79A;
+}
+.pill--emom {
+  border-color: rgba(78, 197, 232, .48);
+  background: rgba(78, 197, 232, .1);
+  color: #A9E7F8;
+}
+/* Minute d'EMOM qui tient l'objectif. */
+.pill--emom.is-hit {
+  border-color: rgba(255, 176, 46, .5);
+  background: rgba(255, 176, 46, .12);
+  color: #FFD79A;
+}
+
 /* Célébration à l'enregistrement d'une série : le chiffre encaisse la charge,
    la barre vibre, et le nombre ajouté s'envole. */
 .stage.is-bumped .stage-count { animation: bump .5s cubic-bezier(.3, 1.4, .5, 1); }
@@ -865,7 +884,16 @@ button, input { font: inherit; color: inherit; }
   justify-content: space-between;
   gap: 10px;
 }
+.journal-left { display: grid; gap: 1px; min-width: 0; }
 .journal-date { font-size: 15px; }
+/* L'origine des séries de la journée : libre, programme, EMOM, ou plusieurs. */
+.journal-src {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--haze);
+}
 .journal-total {
   font-family: var(--display);
   font-size: 21px;
@@ -958,13 +986,26 @@ body.is-locked { overflow: hidden; }
 }
 .day-row:first-child { border-top: 0; }
 
-.day-time {
+.day-meta {
   flex: none;
-  width: 42px;
+  width: 54px;
+  display: grid;
+  gap: 1px;
+}
+.day-time {
   font-family: var(--mono);
   font-size: 12px;
   color: var(--haze);
 }
+.day-src {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.day-src--libre { color: #FFC49B; }
+.day-src--prog  { color: var(--flare); }
+.day-src--emom  { color: var(--sky); }
 
 .day-field {
   flex: 1 1 0;
@@ -1012,6 +1053,303 @@ body.is-locked { overflow: hidden; }
 
 #dayPage .btn--wide { max-width: 640px; margin-inline: auto; display: block; }
 #dayPage .admin-note { max-width: 640px; margin-inline: auto; text-align: center; }
+
+/* ---------- Programme : bascule libre / programme ---------- */
+
+/* Les deux blocs ne sont que des enveloppes : leurs cartes restent des
+   éléments de la grille, la mise en page à deux colonnes tient toujours. */
+#freeTraining,
+#progTraining { display: contents; }
+
+.modeswitch {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--steel);
+  border-radius: var(--r-soft);
+}
+.modebtn {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--haze);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (min-width: 390px) {
+  .modebtn { font-size: 14px; }
+}
+.modebtn.is-active {
+  background: rgba(255, 122, 47, .16);
+  box-shadow: inset 0 0 0 1px rgba(255, 122, 47, .45);
+  color: var(--chalk);
+}
+
+/* ---------- Programme : la séance du jour ---------- */
+
+.prog-level {
+  margin-top: 10px;
+  font-family: var(--display);
+  font-size: clamp(22px, 6.5vw, 30px);
+  line-height: 1.05;
+  color: var(--chalk);
+}
+.prog-day {
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+
+.prog-targets {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 14px;
+}
+.prog-target {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 2px;
+  border: 1px solid var(--steel);
+  border-radius: var(--r-soft);
+  background: rgba(255, 122, 47, .06);
+}
+.prog-target b {
+  font-family: var(--display);
+  font-size: clamp(20px, 6vw, 26px);
+  font-weight: 400;
+  line-height: 1;
+  color: var(--chalk);
+}
+.prog-rank {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--haze);
+}
+
+.prog-note {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--haze);
+}
+.prog-rest {
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--flare);
+}
+
+/* ---------- EMOM ---------- */
+
+.emom-lead {
+  margin-top: 10px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--haze);
+}
+
+.emom-config {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+@media (min-width: 560px) {
+  .emom-config { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.emom-field {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  padding: 8px 6px 10px;
+  border: 1px solid var(--steel);
+  border-radius: var(--r-soft);
+}
+.emom-field > span:first-child {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--haze);
+}
+.emom-field .counter { margin: 0; }
+
+/* Les minutes déjà bouclées, sous le chrono. */
+.emom-done { justify-content: center; margin-top: 16px; }
+
+#emomEntry .cta,
+#emomEnd .cta { max-width: 420px; margin-inline: auto; }
+#emomEnd .cta { margin-top: 18px; }
+#emomWait { min-height: 96px; display: grid; align-content: center; }
+
+/* ---------- Programme : la séance en cours ---------- */
+
+/* La séance se cale au milieu de l'écran. « safe » retombe en haut dès que le
+   contenu dépasse : rien ne part hors d'atteinte sur un petit écran. */
+#sessionPage .page-body,
+#emomPage .page-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+}
+
+.sess {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding-top: 10px;
+  text-align: center;
+}
+
+.sess-step {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--haze);
+}
+.sess-target {
+  margin-top: 6px;
+  font-family: var(--display);
+  font-size: clamp(76px, 26vw, 132px);
+  line-height: .9;
+  color: var(--orange);
+}
+.sess-hint {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--haze);
+}
+#stepSet .counter { margin-top: 20px; }
+#stepSet .cta { max-width: 420px; margin-inline: auto; }
+
+/* Le repos vient de s'achever : un signal, l'écran n'est pas sous les yeux. */
+#stepSet.is-ready .sess-target { animation: ready-pulse 1.4s ease-out; }
+@keyframes ready-pulse {
+  0%, 100% { color: var(--orange); text-shadow: none; }
+  25%      { color: var(--flare); text-shadow: 0 0 34px rgba(255, 176, 46, .8); }
+}
+
+/* Anneau de repos : le disque se remplit à mesure que le temps passe. */
+.rest-ring {
+  position: relative;
+  width: min(58vw, 230px);
+  aspect-ratio: 1;
+  margin: 18px auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--sky) calc(var(--rest, 0) * 360deg), rgba(30, 62, 77, .6) 0);
+}
+.rest-ring::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border-radius: 50%;
+  background: var(--ink2);
+}
+.sess-clock {
+  position: relative;
+  font-family: var(--display);
+  font-size: clamp(44px, 15vw, 70px);
+  line-height: 1;
+  color: var(--chalk);
+}
+#stepRest .btn--wide { max-width: 420px; margin-inline: auto; }
+
+.sess-verdict {
+  margin-top: 6px;
+  font-family: var(--display);
+  font-size: clamp(28px, 8vw, 40px);
+  line-height: 1.05;
+  color: var(--rust);
+}
+.sess-verdict.is-ok { color: var(--flare); }
+
+.sess-recap {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 16px;
+}
+.recap-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 8px 2px;
+  border: 1px solid rgba(224, 92, 62, .45);
+  border-radius: var(--r-soft);
+}
+.recap-row.is-hit { border-color: rgba(255, 176, 46, .5); background: rgba(255, 176, 46, .08); }
+.recap-row b {
+  font-family: var(--display);
+  font-size: clamp(20px, 6vw, 26px);
+  font-weight: 400;
+  line-height: 1;
+  color: var(--rust);
+}
+.recap-row.is-hit b { color: var(--flare); }
+.recap-goal {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--haze);
+}
+#stepDone .cta { max-width: 420px; margin: 18px auto 0; }
+
+.sess-quit {
+  display: block;
+  margin: 22px auto 0;
+  color: var(--haze);
+}
+
+/* ---------- Programme : le test de niveau ---------- */
+
+.setup {
+  display: grid;
+  gap: 12px;
+  max-width: 640px;
+  margin: 0 auto;
+  padding-top: 10px;
+}
+.setup .card-title { color: var(--orange); }
+.setup-lead {
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--haze);
+}
+.setup-level {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 122, 47, .45);
+  border-radius: var(--r-soft);
+  background: rgba(255, 122, 47, .09);
+  font-family: var(--display);
+  font-size: clamp(18px, 5vw, 24px);
+  line-height: 1.15;
+  text-align: center;
+  color: var(--chalk);
+}
+.setup .cta + .setup-lead { margin-bottom: 16px; }
 
 /* ---------- Accessibilité mouvement ---------- */
 

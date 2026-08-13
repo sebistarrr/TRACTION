@@ -36,6 +36,19 @@
     <section class="view" id="view-training" role="tabpanel" aria-labelledby="nav-training" tabindex="0">
       <div class="layout">
 
+        <div class="modeswitch" role="tablist" aria-label="Type d’entraînement">
+          <button type="button" role="tab" class="modebtn is-active" data-mode="libre"
+                  aria-selected="true" aria-controls="freeTraining">Libre</button>
+          <button type="button" role="tab" class="modebtn" data-mode="programme"
+                  aria-selected="false" aria-controls="progTraining" tabindex="-1"
+                  aria-label="Programme 50 tractions">50 tractions</button>
+          <button type="button" role="tab" class="modebtn" data-mode="emom"
+                  aria-selected="false" aria-controls="emomTraining" tabindex="-1">EMOM</button>
+        </div>
+
+        <!-- ---- Entraînement libre : le compteur d'origine ---- -->
+        <div id="freeTraining">
+
         <section class="card hero" aria-labelledby="heroTitle">
           <h1 class="card-title" id="heroTitle">Aujourd’hui</h1>
 
@@ -82,6 +95,62 @@
 
           <button type="button" class="cta" id="saveBtn">Enregistrer la série</button>
         </section>
+
+        </div><!-- /freeTraining -->
+
+        <!-- ---- Programme 50 tractions : la séance du jour ---- -->
+        <div id="progTraining" hidden>
+          <section class="card prog" aria-labelledby="progTitle">
+            <h2 class="card-title" id="progTitle">Programme 50 tractions</h2>
+
+            <p class="prog-level" id="progLevel"></p>
+            <p class="prog-day" id="progDay"></p>
+
+            <ul class="prog-targets" id="progTargets" aria-label="Objectifs des séries"></ul>
+
+            <p class="prog-note" id="progNote"></p>
+            <p class="prog-rest" id="progRest" hidden></p>
+
+            <button type="button" class="cta" id="startSession">Démarrer un entraînement</button>
+          </section>
+        </div>
+
+        <!-- ---- EMOM : une série au début de chaque minute ---- -->
+        <div id="emomTraining" hidden>
+          <section class="card" aria-labelledby="emomCardTitle">
+            <h2 class="card-title" id="emomCardTitle">EMOM</h2>
+            <p class="emom-lead">Une série au début de chaque minute. Le reste de la
+              minute sert de repos, et le chrono ne s’arrête jamais.</p>
+
+            <div class="emom-config">
+              <div class="emom-field">
+                <span>Tractions par série</span>
+                <span class="counter counter--small">
+                  <button type="button" class="round-btn" id="emomRepsDec" aria-label="Moins de tractions">−</button>
+                  <input class="counter-input" id="emomRepsCfg" type="text" inputmode="numeric"
+                         pattern="[0-9]*" autocomplete="off" value="5" maxlength="3"
+                         aria-label="Tractions par série">
+                  <button type="button" class="round-btn" id="emomRepsInc" aria-label="Plus de tractions">+</button>
+                </span>
+              </div>
+
+              <div class="emom-field">
+                <span>Minutes</span>
+                <span class="counter counter--small">
+                  <button type="button" class="round-btn" id="emomRoundsDec" aria-label="Moins de minutes">−</button>
+                  <input class="counter-input" id="emomRoundsCfg" type="text" inputmode="numeric"
+                         pattern="[0-9]*" autocomplete="off" value="10" maxlength="2"
+                         aria-label="Nombre de minutes">
+                  <button type="button" class="round-btn" id="emomRoundsInc" aria-label="Plus de minutes">+</button>
+                </span>
+              </div>
+            </div>
+
+            <p class="prog-note" id="emomTotal"></p>
+
+            <button type="button" class="cta" id="startEmom">Démarrer l’EMOM</button>
+          </section>
+        </div>
       </div>
     </section>
 
@@ -165,6 +234,15 @@
             <input class="counter-input" id="goalInput" type="text" inputmode="numeric" pattern="[0-9]*"
                    autocomplete="off" maxlength="4" aria-label="Objectif quotidien">
             <button type="button" class="round-btn" id="goalInc" aria-label="Monter l’objectif">+</button>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="progAdminTitle">
+          <h2 class="card-title" id="progAdminTitle">Programme 50 tractions</h2>
+          <p class="admin-note" id="progAdmin"></p>
+          <div class="admin-actions">
+            <button type="button" class="btn" id="retestBtn">Refaire le test</button>
+            <button type="button" class="btn btn--danger" id="resetProg">Repartir de zéro</button>
           </div>
         </section>
 
@@ -261,6 +339,161 @@
     <div class="day-rows" id="dayRows"></div>
     <button type="button" class="btn btn--danger btn--wide" id="deleteDay">Supprimer la journée</button>
     <p class="admin-note">Modifie les tractions et la charge directement dans les champs.</p>
+  </div>
+</section>
+
+<!-- ============ Page dédiée : une séance du programme ============ -->
+<section class="page" id="sessionPage" aria-labelledby="sessionTitle" hidden>
+  <header class="page-head">
+    <button type="button" class="icon-btn" id="sessionBack" aria-label="Quitter la séance">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="page-head-text">
+      <h2 class="page-title" id="sessionTitle">Séance</h2>
+      <p class="page-sub" id="sessionSub"></p>
+    </div>
+  </header>
+
+  <div class="page-body">
+
+    <!-- Étape 1 : la série en cours -->
+    <div class="sess" id="stepSet">
+      <p class="sess-step" id="sessStep"></p>
+      <p class="sess-target" id="sessTarget">0</p>
+      <p class="sess-hint" id="sessHint"></p>
+
+      <div class="counter">
+        <button type="button" class="round-btn" id="sessDec" aria-label="Retirer une traction">−</button>
+        <input class="counter-input" id="sessReps" type="text" inputmode="numeric" pattern="[0-9]*"
+               autocomplete="off" value="0" maxlength="3" aria-label="Tractions effectuées">
+        <button type="button" class="round-btn" id="sessInc" aria-label="Ajouter une traction">+</button>
+      </div>
+
+      <button type="button" class="cta" id="validateSet">Valider la série</button>
+    </div>
+
+    <!-- Étape 2 : le repos -->
+    <div class="sess" id="stepRest" hidden>
+      <p class="sess-step">Repos</p>
+      <div class="rest-ring" id="restRing" aria-hidden="true">
+        <p class="sess-clock" id="restClock">0:00</p>
+      </div>
+      <p class="sess-hint" id="restNext"></p>
+      <button type="button" class="btn btn--wide" id="skipRest">Passer le repos</button>
+    </div>
+
+    <!-- Étape 3 : le bilan -->
+    <div class="sess" id="stepDone" hidden>
+      <p class="sess-verdict" id="sessVerdict"></p>
+      <ul class="sess-recap" id="sessRecap" aria-label="Séries de la séance"></ul>
+      <p class="sess-hint" id="sessAfter"></p>
+      <button type="button" class="cta" id="finishSession">Terminer</button>
+    </div>
+
+    <button type="button" class="linklike sess-quit" id="quitSession">Abandonner la séance</button>
+  </div>
+</section>
+
+<!-- ============ Page dédiée : une séance EMOM ============ -->
+<section class="page" id="emomPage" aria-labelledby="emomTitle" hidden>
+  <header class="page-head">
+    <button type="button" class="icon-btn" id="emomBack" aria-label="Quitter l’EMOM">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="page-head-text">
+      <h2 class="page-title" id="emomTitle">EMOM</h2>
+      <p class="page-sub" id="emomSub"></p>
+    </div>
+  </header>
+
+  <div class="page-body">
+
+    <!-- Le chrono tourne, la minute se remplit -->
+    <div class="sess" id="emomRun">
+      <p class="sess-step" id="emomStep"></p>
+
+      <div class="rest-ring" id="emomRing" aria-hidden="true">
+        <p class="sess-clock" id="emomClock">1:00</p>
+      </div>
+
+      <div id="emomEntry">
+        <p class="sess-hint" id="emomHint"></p>
+        <div class="counter">
+          <button type="button" class="round-btn" id="emomDec" aria-label="Retirer une traction">−</button>
+          <input class="counter-input" id="emomInput" type="text" inputmode="numeric" pattern="[0-9]*"
+                 autocomplete="off" value="5" maxlength="3" aria-label="Tractions effectuées">
+          <button type="button" class="round-btn" id="emomInc" aria-label="Ajouter une traction">+</button>
+        </div>
+        <button type="button" class="cta" id="emomLog">Valider la série</button>
+      </div>
+
+      <div id="emomWait" hidden>
+        <p class="sess-hint" id="emomWaitHint"></p>
+      </div>
+
+      <ul class="pills emom-done" id="emomDone" aria-label="Minutes enregistrées"></ul>
+
+      <button type="button" class="linklike sess-quit" id="emomQuit">Arrêter l’EMOM</button>
+    </div>
+
+    <!-- Bilan -->
+    <div class="sess" id="emomEnd" hidden>
+      <p class="sess-verdict" id="emomVerdict"></p>
+      <p class="sess-hint" id="emomRecapText"></p>
+      <ul class="pills emom-done" id="emomRecap" aria-label="Minutes de la séance"></ul>
+      <button type="button" class="cta" id="emomFinish">Terminer</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Page dédiée : le test de niveau ============ -->
+<section class="page" id="setupPage" aria-labelledby="setupTitle" hidden>
+  <header class="page-head">
+    <button type="button" class="icon-btn" id="setupClose" aria-label="Fermer" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round"/>
+      </svg>
+    </button>
+    <div class="page-head-text">
+      <h2 class="page-title" id="setupTitle">Ton niveau</h2>
+      <p class="page-sub">Programme 50 tractions</p>
+    </div>
+  </header>
+
+  <div class="page-body">
+    <div class="setup">
+      <section class="card" aria-labelledby="testTitle">
+        <h2 class="card-title" id="testTitle">Le test</h2>
+        <p class="setup-lead">Combien de tractions complètes enchaînes-tu en une seule
+          série, menton au-dessus de la barre ?</p>
+
+        <div class="counter">
+          <button type="button" class="round-btn" id="setupDec" aria-label="Retirer une traction">−</button>
+          <input class="counter-input" id="setupScore" type="text" inputmode="numeric" pattern="[0-9]*"
+                 autocomplete="off" value="8" maxlength="3" aria-label="Tractions au test">
+          <button type="button" class="round-btn" id="setupInc" aria-label="Ajouter une traction">+</button>
+        </div>
+
+        <p class="setup-level" id="setupLevel"></p>
+      </section>
+
+      <section class="card" aria-labelledby="modeTitle">
+        <h2 class="card-title" id="modeTitle">Ton entraînement</h2>
+        <button type="button" class="cta" id="chooseProg">Suivre le programme</button>
+        <p class="setup-lead">Cinq séries par séance, objectifs imposés, repos minuté.
+          Objectif rempli, tu passes au jour suivant.</p>
+        <button type="button" class="btn btn--wide" id="chooseFree">Entraînement libre</button>
+        <p class="setup-lead">Le compteur seul, tes séries quand tu veux.
+          Le programme reste accessible à tout moment.</p>
+      </section>
+    </div>
   </div>
 </section>
 

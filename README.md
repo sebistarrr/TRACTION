@@ -14,6 +14,11 @@ uniquement quand il dépasse.
 
 ### 1. Training
 
+Trois entraînements, au choix, sous une bascule **Libre · 50 tractions · EMOM** en haut
+de l’onglet. Le choix se garde d’une session à l’autre et se change à tout moment.
+
+#### 1a. Libre
+
 - Le total du jour en grand. Il monte et franchit physiquement une barre de traction à mesure
   que l’objectif approche ; objectif franchi, la barre passe en ambre.
 - Compteur `−` / `+`, chiffre éditable au clavier numérique, raccourcis **2 · 4 · 6 · 8 · 10 · 12**.
@@ -35,6 +40,80 @@ grandissent d’un cran. Une journée chargée reste sans défilement : 20 séri
 16 (393 × 852), **16 Pro (402 × 874)** et 16 Pro Max (440 × 956), zones de sécurité
 comprises : 59 pt de Dynamic Island en haut, 34 pt d’indicateur d’accueil en bas.
 
+#### 1b. Programme 50 tractions
+
+Les cycles de [50tractions.com](https://www.50tractions.com/objectif-50-tractions/les-principes-du-programme),
+repris tels quels : **onze niveaux**, cinq séries par séance, **120 secondes de repos**
+entre les séries.
+
+**Au premier lancement**, l’app demande le test : combien de tractions complètes
+d’affilée, menton au-dessus de la barre. Le score choisit le cycle — 7 tractions
+ouvrent le cycle *6-8*, et ainsi de suite jusqu’à *plus de 40*. On choisit ensuite
+entre le programme et l’entraînement libre. Le test se refait depuis **Admin →
+Programme 50 tractions**.
+
+| Test        | Cycle | Journées |
+|-------------|-------|----------|
+| 0 – 3       | Moins de 4 tractions | 6 |
+| 4 – 5       | 4-5 tractions        | 6 |
+| 6 – 8       | 6-8 tractions        | 6 |
+| 9 – 11      | 9-11 tractions       | 6 |
+| 12 – 15     | 12-15 tractions      | 6 |
+| 16 – 20     | 16-20 tractions      | 9 |
+| 21 – 25     | 21-25 tractions      | 9 |
+| 26 – 30     | 26-30 tractions      | 9 |
+| 31 – 35     | 31-35 tractions      | 9 |
+| 36 – 40     | 36-40 tractions      | 9 |
+| 41 et plus  | Plus de 40 tractions | 9 |
+
+La **séance du jour** affiche le niveau, le jour dans le cycle et les cinq objectifs.
+Un nombre est un objectif ferme ; **`3+`** est une série à l’épuisement, validée à
+partir de 3.
+
+**Démarrer un entraînement** ouvre la séance, série par série :
+
+1. l’objectif en grand, le champ prérempli à cette valeur ;
+2. on corrige le nombre réellement effectué, on valide ;
+3. le **repos de 120 secondes** part aussitôt, en anneau. Il se passe d’un bouton,
+   et se termine seul par une pulsation ambre — l’écran n’est pas forcément sous les yeux ;
+4. après la cinquième série, le **bilan** : chaque série face à son objectif.
+
+**Objectif rempli** — les cinq séries au moins à leur objectif — fait passer au jour
+suivant, et au **niveau suivant** une fois le dernier jour du cycle franchi.
+**Objectif manqué**, le même jour revient à la prochaine séance.
+
+Le programme conseille **un jour de repos** entre deux séances, **deux jours** toutes
+les trois séances. La carte affiche le repos restant sans jamais bloquer la séance.
+
+Une séance interrompue se retrouve intacte, repos compris : le décompte est un
+horodatage, pas un minuteur. Le bouton propose alors de **reprendre la séance**.
+
+Les séries du programme sont des séries comme les autres : elles nourrissent le
+journal, les records et l’évolution.
+
+#### 1c. EMOM
+
+*Every Minute On the Minute* : une série au début de chaque minute, le reste de la
+minute sert de repos.
+
+Avant de partir, deux réglages : les **tractions par série** et le **nombre de
+minutes**. La carte annonce la séance prévue — « 50 tractions en 10 minutes ».
+
+Pendant la séance, **le chrono ne s’arrête jamais**. L’anneau se remplit sur la minute
+en cours, et c’est lui qui mène :
+
+- on renseigne le **nombre réellement effectué**, puis on valide ;
+- validée en avance, la série laisse souffler jusqu’à la minute suivante, qui
+  reprend la main toute seule ;
+- **la minute se referme sur le nombre affiché** si rien n’est validé. Une minute
+  passée entièrement à côté — écran éteint, téléphone dans la poche — se referme
+  sur l’objectif ;
+- après la dernière minute, le bilan : total, et combien de minutes ont tenu
+  l’objectif.
+
+**Arrêter l’EMOM** en cours de route ne perd rien : les minutes déjà faites restent
+au journal.
+
 ### 2. Record
 
 Trois records, en grand, chacun avec sa date : **record sur une série**,
@@ -43,13 +122,17 @@ Trois records, en grand, chacun avec sa date : **record sur une série**,
 ### 3. Journal
 
 Uniquement les journées actives, de la plus récente à la plus ancienne : la date, le total,
-et les séries en **étiquettes orange**, exactement celles de Training — une pastille par série,
+et les séries en étiquettes, exactement celles de Training — une pastille par série,
 la charge accolée. Le total passe en ambre quand l’objectif du jour a été franchi.
 
+**L’origine de chaque série se lit sur la pastille**, à sa couleur : **orange** en libre,
+**ambre** au programme, **cyan** en EMOM. Sous la date, la journée annonce ce qu’elle
+contient — `Libre`, `50 tractions`, `EMOM`, ou plusieurs si elle a mélangé.
+
 **Toucher une journée l’ouvre en édition** : chaque série y a son champ tractions et son champ
-charge, modifiables directement, avec suppression unitaire. Un bouton efface la journée entière,
-en deux temps. La date est dans l’adresse (`#jour=AAAA-MM-JJ`), le bouton retour du navigateur
-referme l’éditeur.
+charge, modifiables directement, avec suppression unitaire, et **son origine en toutes
+lettres**. Un bouton efface la journée entière, en deux temps. La date est dans l’adresse
+(`#jour=AAAA-MM-JJ`), le bouton retour du navigateur referme l’éditeur.
 
 ### 4. Évolution
 
@@ -75,6 +158,8 @@ entre périodes bien plus lisibles.
 ### 5. Administration
 
 - Objectif quotidien.
+- **Programme 50 tractions** : niveau et jour en cours, *Refaire le test* pour se
+  resituer, *Repartir de zéro* pour rejouer le premier lancement.
 - Export et import d’un fichier `.json`, réinitialisation totale en deux temps.
 
 La gestion des séries se fait depuis le Journal, où elle a sa place naturelle : par date.
@@ -88,6 +173,11 @@ l’action principale, **ambre** pour Record et l’objectif franchi, **cyan** p
 l’histogramme, **iris** pour Administration, **rouille** pour le destructif uniquement.
 L’orange est complémentaire du fond, c’est le couple le plus contrasté de la palette. Les
 quatre accents dépassent 4,5:1 de contraste sur le fond des cartes.
+
+Les mêmes trois accents disent l’origine d’une série au journal — orange en libre, ambre
+au programme, cyan en EMOM — et l’anneau de repos, comme l’histogramme, tourne en cyan.
+La couleur n’est jamais seule à porter l’information : la journée nomme ses origines et
+chaque pastille garde son libellé.
 
 Aucun backend, aucun tracking, aucune requête au runtime. Tout tient dans `localStorage`.
 
@@ -167,9 +257,13 @@ autre navigateur donne un historique vide.
 **Utilise régulièrement Administration → Exporter.** Le fichier `tractions-AAAA-MM-JJ.json`
 se réimporte tel quel, en fusion ou en remplacement.
 
-Le format d’export est en **version 2** : chaque série porte `id`, `date`, `reps`, `kg` et `ts`.
-Les fichiers de **version 1**, antérieurs à la charge, restent importables — leurs séries sont
-reprises à 0 kg, et l’import le dit.
+Le format d’export est en **version 4** : chaque série porte `id`, `date`, `reps`, `kg`,
+`ts` et `src` — son origine — et le fichier porte en plus la progression du programme
+sous `prog` et les réglages EMOM sous `emom`. Les versions antérieures restent
+importables : la **version 1** ignorait la charge — ses séries sont reprises à 0 kg, et
+l’import le dit — la **version 2** ignorait le programme et la **version 3** l’origine,
+dont les séries sont alors reprises comme libres. Un remplacement à partir d’un fichier
+qui ne porte ni `prog` ni `emom` laisse ces réglages en place.
 
 ## Structure
 
