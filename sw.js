@@ -1,7 +1,7 @@
 /* Service worker : cache-first sur le shell, purge des versions précédentes.
    Tous les chemins sont relatifs au scope, l'app vit dans un sous-dossier. */
 
-var CACHE = 'tractions-shell-v15';
+var CACHE = 'tractions-shell-v18';
 
 var SHELL = [
   './',

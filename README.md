@@ -46,13 +46,16 @@ Les cycles de [50tractions.com](https://www.50tractions.com/objectif-50-traction
 repris tels quels : **onze niveaux**, cinq séries par séance, **120 secondes de repos**
 entre les séries.
 
-**Au premier lancement**, l’app demande le test : combien de tractions complètes
-d’affilée, menton au-dessus de la barre. Le score choisit le cycle — 7 tractions
-ouvrent le cycle *6-8*, et ainsi de suite jusqu’à *plus de 40*. On choisit ensuite
-entre le programme et l’entraînement libre. Le test se refait depuis **Admin →
-Programme 50 tractions**.
+**Au premier lancement**, un mot de bienvenue et une seule question : le **record de
+tractions strictes** — bras tendus en bas, menton au-dessus de la barre. Un bouton
+valide, et c’est tout.
 
-| Test        | Cycle | Journées |
+Ce record choisit le cycle — 7 tractions ouvrent le cycle *6-8*, et ainsi de suite
+jusqu’à *plus de 40* — et l’app s’ouvre sur le programme, qui en découle directement.
+La bascule en haut de Training mène au libre et à l’EMOM ; le niveau et le jour se
+reprennent depuis **Admin → Programme 50 tractions**.
+
+| Record      | Cycle | Journées |
 |-------------|-------|----------|
 | 0 – 3       | Moins de 4 tractions | 6 |
 | 4 – 5       | 4-5 tractions        | 6 |
@@ -65,6 +68,10 @@ Programme 50 tractions**.
 | 31 – 35     | 31-35 tractions      | 9 |
 | 36 – 40     | 36-40 tractions      | 9 |
 | 41 et plus  | Plus de 40 tractions | 9 |
+
+Les **deux premiers cycles se font en tractions négatives** : on ne se hisse pas, on
+part menton à la barre et on descend lentement. L’app le signale partout où le cycle
+est nommé — carte du jour et écran des jours.
 
 La **séance du jour** affiche le niveau, le jour dans le cycle et les cinq objectifs.
 Un nombre est un objectif ferme ; **`3+`** est une série à l’épuisement, validée à
@@ -84,6 +91,19 @@ suivant, et au **niveau suivant** une fois le dernier jour du cycle franchi.
 
 Le programme conseille **un jour de repos** entre deux séances, **deux jours** toutes
 les trois séances. La carte affiche le repos restant sans jamais bloquer la séance.
+
+#### Reprendre la main sur le cycle
+
+**Admin → Programme 50 tractions → Choisir jour du programme** ouvre le programme
+entier. Le cycle se feuillette à la flèche, du *moins de 4* au *plus de 40* ; chaque
+journée y montre ses cinq objectifs et ses deux repos — les 120 secondes entre les
+séries, puis le ou les jours de pause avant la séance suivante. Celle où en est le
+programme porte la mention *en cours*.
+
+Toucher une journée la désigne comme **prochaine séance** ; **Valider** l’enregistre,
+le bouton retour ressort sans rien changer. Une séance laissée en cours ailleurs dans
+le cycle est abandonnée à la validation — elle imposerait sa propre suite au moment du
+bilan. Les séries déjà enregistrées, elles, restent au journal.
 
 Une séance interrompue se retrouve intacte, repos compris : le décompte est un
 horodatage, pas un minuteur. Le bouton propose alors de **reprendre la séance**.
@@ -126,8 +146,10 @@ et les séries en étiquettes, exactement celles de Training — une pastille pa
 la charge accolée. Le total passe en ambre quand l’objectif du jour a été franchi.
 
 **L’origine de chaque série se lit sur la pastille**, à sa couleur : **orange** en libre,
-**ambre** au programme, **cyan** en EMOM. Sous la date, la journée annonce ce qu’elle
-contient — `Libre`, `50 tractions`, `EMOM`, ou plusieurs si elle a mélangé.
+**orchidée** au programme, **cyan** en EMOM — trois teintes séparées d’environ 95° les
+unes des autres, pour se distinguer d’un coup d’œil même en petites pastilles. Sous la
+date, la journée annonce ce qu’elle contient — `Libre`, `50 tractions`, `EMOM`, ou
+plusieurs si elle a mélangé.
 
 **Toucher une journée l’ouvre en édition** : chaque série y a son champ tractions et son champ
 charge, modifiables directement, avec suppression unitaire, et **son origine en toutes
@@ -158,8 +180,8 @@ entre périodes bien plus lisibles.
 ### 5. Administration
 
 - Objectif quotidien.
-- **Programme 50 tractions** : niveau et jour en cours, *Refaire le test* pour se
-  resituer, *Repartir de zéro* pour rejouer le premier lancement.
+- **Programme 50 tractions** : niveau et jour en cours, et *Choisir les jours du
+  programme* pour reprendre la main dessus.
 - Export et import d’un fichier `.json`, réinitialisation totale en deux temps.
 
 La gestion des séries se fait depuis le Journal, où elle a sa place naturelle : par date.
@@ -174,8 +196,11 @@ l’histogramme, **iris** pour Administration, **rouille** pour le destructif un
 L’orange est complémentaire du fond, c’est le couple le plus contrasté de la palette. Les
 quatre accents dépassent 4,5:1 de contraste sur le fond des cartes.
 
-Les mêmes trois accents disent l’origine d’une série au journal — orange en libre, ambre
-au programme, cyan en EMOM — et l’anneau de repos, comme l’histogramme, tourne en cyan.
+Un cinquième accent, l’**orchidée**, ne sert qu’à une chose : dire qu’une série vient du
+programme, au journal. Les trois origines y sont orange, orchidée et cyan — un écart de
+teinte d’environ 95° entre chacune, là où l’ambre du programme se confondait avec
+l’orange du libre. L’anneau de repos, comme l’histogramme, tourne en cyan.
+
 La couleur n’est jamais seule à porter l’information : la journée nomme ses origines et
 chaque pastille garde son libellé.
 

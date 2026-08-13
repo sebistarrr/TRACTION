@@ -39,6 +39,10 @@
   --orange:#FF7A2F;   /* Training, progression, action principale */
   --sky:   #4EC5E8;   /* Évolution, histogramme */
   --iris:  #9B8CF5;   /* Administration */
+  /* Origine « programme » au journal. Choisie à mi-chemin entre l'orange du
+     libre et le cyan de l'EMOM — environ 95° de teinte de chacun — pour que
+     les trois se distinguent d'un coup d'œil, même en petites pastilles. */
+  --orchid:#C86BDC;
 
   --sans: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --display: 'Anton', 'Arial Narrow', Impact, system-ui, sans-serif;
@@ -383,12 +387,13 @@ button, input { font: inherit; color: inherit; }
   color: #FFC49B;
 }
 
-/* L'origine de la série se lit à sa couleur : orange en libre, ambre au
-   programme, cyan en EMOM. Le libellé reste dans l'attribut title. */
+/* L'origine de la série se lit à sa couleur : orange en libre, orchidée au
+   programme, cyan en EMOM — trois teintes franchement distinctes, l'ambre
+   restant réservé à « objectif franchi ». Le libellé reste dans le title. */
 .pill--prog {
-  border-color: rgba(255, 176, 46, .48);
-  background: rgba(255, 176, 46, .1);
-  color: #FFD79A;
+  border-color: rgba(200, 107, 220, .55);
+  background: rgba(200, 107, 220, .13);
+  color: #E7A9F5;
 }
 .pill--emom {
   border-color: rgba(78, 197, 232, .48);
@@ -1004,7 +1009,7 @@ body.is-locked { overflow: hidden; }
   text-transform: uppercase;
 }
 .day-src--libre { color: #FFC49B; }
-.day-src--prog  { color: var(--flare); }
+.day-src--prog  { color: var(--orchid); }
 .day-src--emom  { color: var(--sky); }
 
 .day-field {
@@ -1321,6 +1326,121 @@ body.is-locked { overflow: hidden; }
   color: var(--haze);
 }
 
+/* ---------- Programme : les jours du cycle ---------- */
+
+.days {
+  max-width: 640px;
+  margin: 0 auto;
+  padding-top: 10px;
+}
+
+/* Le niveau se feuillette : flèche, nom, flèche. */
+.level-nav {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+.level-head { min-width: 0; text-align: center; }
+.level-name {
+  font-family: var(--display);
+  font-size: clamp(19px, 5.5vw, 26px);
+  line-height: 1.1;
+  color: var(--chalk);
+}
+
+/* Les deux premiers cycles ne se hissent pas : on le dit là où ils sont nommés. */
+.neg-tag {
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--sky);
+}
+.prog .neg-tag { margin-top: 5px; }
+
+.day-pick-rest {
+  display: block;
+  margin-top: 5px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .03em;
+  color: var(--haze);
+}
+.icon-btn:disabled { opacity: .3; cursor: not-allowed; }
+.icon-btn:disabled:hover { border-color: var(--steel); }
+
+.day-list { display: grid; gap: 6px; margin-top: 14px; }
+
+.day-pick {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid var(--steel);
+  border-radius: var(--r-soft);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.day-pick:hover { border-color: var(--bar); }
+.day-pick.is-picked {
+  border-color: var(--orange);
+  background: rgba(255, 122, 47, .13);
+}
+
+.day-pick-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.day-pick-name {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--haze);
+}
+.day-pick.is-picked .day-pick-name { color: var(--orange); }
+
+.day-pick-here {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 176, 46, .5);
+  color: var(--flare);
+}
+
+.day-pick-sets {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 5px;
+}
+.day-pick-sets b {
+  font-family: var(--display);
+  font-size: clamp(17px, 5vw, 21px);
+  font-weight: 400;
+  line-height: 1;
+  text-align: center;
+  color: var(--bar);
+}
+.day-pick.is-picked .day-pick-sets b { color: var(--chalk); }
+
+/* Neuf jours ne tiennent pas dans un petit écran : le bouton reste à portée
+   de pouce pendant que la liste défile. */
+.days .cta {
+  position: sticky;
+  bottom: 0;
+  margin-top: 16px;
+  box-shadow: 0 -10px 20px rgba(8, 21, 29, .85);
+}
+
 /* ---------- Programme : le test de niveau ---------- */
 
 .setup {
@@ -1331,25 +1451,25 @@ body.is-locked { overflow: hidden; }
   padding-top: 10px;
 }
 .setup .card-title { color: var(--orange); }
+
+/* Le mot d'accueil, avant la seule question posée. */
+.setup-hello {
+  margin-bottom: 16px;
+  font-size: clamp(16px, 4.6vw, 19px);
+  line-height: 1.4;
+  color: var(--chalk);
+}
+
 .setup-lead {
   margin-top: 10px;
   font-size: 14px;
   line-height: 1.45;
   color: var(--haze);
 }
-.setup-level {
-  margin-top: 14px;
-  padding: 10px 12px;
-  border: 1px solid rgba(255, 122, 47, .45);
-  border-radius: var(--r-soft);
-  background: rgba(255, 122, 47, .09);
-  font-family: var(--display);
-  font-size: clamp(18px, 5vw, 24px);
-  line-height: 1.15;
-  text-align: center;
-  color: var(--chalk);
-}
-.setup .cta + .setup-lead { margin-bottom: 16px; }
+.setup-lead b { color: var(--bar); font-weight: 600; }
+
+.setup .counter { margin-top: 18px; }
+.setup .cta { margin-top: 20px; }
 
 /* ---------- Accessibilité mouvement ---------- */
 

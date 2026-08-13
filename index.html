@@ -105,6 +105,7 @@
 
             <p class="prog-level" id="progLevel"></p>
             <p class="prog-day" id="progDay"></p>
+            <p class="neg-tag" id="progNeg" hidden></p>
 
             <ul class="prog-targets" id="progTargets" aria-label="Objectifs des séries"></ul>
 
@@ -241,8 +242,7 @@
           <h2 class="card-title" id="progAdminTitle">Programme 50 tractions</h2>
           <p class="admin-note" id="progAdmin"></p>
           <div class="admin-actions">
-            <button type="button" class="btn" id="retestBtn">Refaire le test</button>
-            <button type="button" class="btn btn--danger" id="resetProg">Repartir de zéro</button>
+            <button type="button" class="btn btn--wide" id="pickDays">Choisir jour du programme</button>
           </div>
         </section>
 
@@ -452,46 +452,77 @@
   </div>
 </section>
 
-<!-- ============ Page dédiée : le test de niveau ============ -->
-<section class="page" id="setupPage" aria-labelledby="setupTitle" hidden>
+<!-- ============ Page dédiée : les jours du programme ============ -->
+<section class="page" id="daysPage" aria-labelledby="daysTitle" hidden>
   <header class="page-head">
-    <button type="button" class="icon-btn" id="setupClose" aria-label="Fermer" hidden>
+    <button type="button" class="icon-btn" id="daysBack" aria-label="Retour à l’administration">
       <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round"/>
+        <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </button>
     <div class="page-head-text">
-      <h2 class="page-title" id="setupTitle">Ton niveau</h2>
-      <p class="page-sub">Programme 50 tractions</p>
+      <h2 class="page-title" id="daysTitle">Jour du programme</h2>
+      <p class="page-sub" id="daysSub"></p>
+    </div>
+  </header>
+
+  <div class="page-body">
+    <div class="days">
+
+      <div class="level-nav">
+        <button type="button" class="icon-btn" id="levelPrev" aria-label="Niveau précédent">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="level-head">
+          <p class="level-name" id="levelName"></p>
+          <p class="neg-tag" id="levelNeg" hidden></p>
+        </div>
+        <button type="button" class="icon-btn" id="levelNext" aria-label="Niveau suivant">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <ul class="day-list" id="dayList" role="radiogroup" aria-labelledby="daysTitle"></ul>
+
+      <button type="button" class="cta" id="daysApply">Valider</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Page dédiée : la première connexion ============ -->
+<section class="page" id="setupPage" aria-labelledby="setupTitle" hidden>
+  <header class="page-head">
+    <div class="page-head-text">
+      <h2 class="page-title" id="setupTitle">Bienvenue</h2>
+      <p class="page-sub">Tractions</p>
     </div>
   </header>
 
   <div class="page-body">
     <div class="setup">
-      <section class="card" aria-labelledby="testTitle">
-        <h2 class="card-title" id="testTitle">Le test</h2>
-        <p class="setup-lead">Combien de tractions complètes enchaînes-tu en une seule
-          série, menton au-dessus de la barre ?</p>
+      <section class="card" aria-labelledby="recordTitle">
+        <p class="setup-hello">Compte tes séries, suis un programme, regarde-toi
+          progresser. Tout reste sur ce téléphone.</p>
+
+        <h2 class="card-title" id="recordTitle">Ton record</h2>
+        <p class="setup-lead">Combien de tractions <b>strictes</b> d’affilée, au maximum :
+          bras tendus en bas, menton au-dessus de la barre.</p>
 
         <div class="counter">
           <button type="button" class="round-btn" id="setupDec" aria-label="Retirer une traction">−</button>
           <input class="counter-input" id="setupScore" type="text" inputmode="numeric" pattern="[0-9]*"
-                 autocomplete="off" value="8" maxlength="3" aria-label="Tractions au test">
+                 autocomplete="off" value="8" maxlength="3" aria-label="Record de tractions strictes">
           <button type="button" class="round-btn" id="setupInc" aria-label="Ajouter une traction">+</button>
         </div>
 
-        <p class="setup-level" id="setupLevel"></p>
-      </section>
-
-      <section class="card" aria-labelledby="modeTitle">
-        <h2 class="card-title" id="modeTitle">Ton entraînement</h2>
-        <button type="button" class="cta" id="chooseProg">Suivre le programme</button>
-        <p class="setup-lead">Cinq séries par séance, objectifs imposés, repos minuté.
-          Objectif rempli, tu passes au jour suivant.</p>
-        <button type="button" class="btn btn--wide" id="chooseFree">Entraînement libre</button>
-        <p class="setup-lead">Le compteur seul, tes séries quand tu veux.
-          Le programme reste accessible à tout moment.</p>
+        <button type="button" class="cta" id="setupGo">Valider</button>
       </section>
     </div>
   </div>

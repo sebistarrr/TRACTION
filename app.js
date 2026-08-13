@@ -28,7 +28,7 @@
      dont le minimum à valider est 10.                                        */
 
   var LEVELS = [
-    { name: 'Moins de 4 tractions', min: 0, max: 3, rest: 120, days: [
+    { name: 'Moins de 4 tractions', min: 0, max: 3, rest: 120, neg: true, days: [
       { sets: [2, 7, 5, 5, 7], pause: 1 },
       { sets: [3, 8, 6, 6, 8], pause: 1 },
       { sets: [4, 9, 6, 6, 8], pause: 2 },
@@ -36,7 +36,7 @@
       { sets: [5, 10, 8, 8, 10], pause: 1 },
       { sets: [6, 10, 8, 8, 11], pause: 2 }
     ] },
-    { name: '4-5 tractions', min: 4, max: 5, rest: 120, days: [
+    { name: '4-5 tractions', min: 4, max: 5, rest: 120, neg: true, days: [
       { sets: [4, 9, 6, 6, 9], pause: 1 },
       { sets: [5, 9, 7, 7, 9], pause: 1 },
       { sets: [6, 10, 8, 8, 10], pause: 2 },
@@ -137,6 +137,14 @@
   ];
 
   var LAST_LEVEL = LEVELS.length - 1;
+
+  /* Les deux premiers cycles se font en négatives : on ne se hisse pas, on
+     part menton à la barre et on descend. À dire partout où le cycle est nommé. */
+  var NEG_TAG = 'Tractions négatives';
+
+  function pauseLabel(day) {
+    return day.pause + ' jour' + plural(day.pause) + ' de repos';
+  }
 
   /* Le test dit le cycle : on prend le premier palier qui contient le score. */
   function levelForScore(n) {
@@ -650,6 +658,7 @@
     progTraining: $('progTraining'),
     progLevel: $('progLevel'),
     progDay: $('progDay'),
+    progNeg: $('progNeg'),
     progTargets: $('progTargets'),
     progNote: $('progNote'),
     progRest: $('progRest'),
@@ -702,14 +711,19 @@
     emomRecap: $('emomRecap'),
     emomFinish: $('emomFinish'),
     setupPage: $('setupPage'),
-    setupClose: $('setupClose'),
     setupScore: $('setupScore'),
-    setupLevel: $('setupLevel'),
-    chooseProg: $('chooseProg'),
-    chooseFree: $('chooseFree'),
+    setupGo: $('setupGo'),
     progAdmin: $('progAdmin'),
-    retestBtn: $('retestBtn'),
-    resetProg: $('resetProg'),
+    pickDays: $('pickDays'),
+    daysPage: $('daysPage'),
+    daysBack: $('daysBack'),
+    daysSub: $('daysSub'),
+    levelPrev: $('levelPrev'),
+    levelNext: $('levelNext'),
+    levelName: $('levelName'),
+    levelNeg: $('levelNeg'),
+    dayList: $('dayList'),
+    daysApply: $('daysApply'),
     resetBtn: $('resetBtn'),
     exportBtn: $('exportBtn'),
     importBtn: $('importBtn'),
@@ -1134,6 +1148,8 @@
 
     el.progLevel.textContent = 'Niveau ' + (p.level + 1) + ' · ' + lvl.name;
     el.progDay.textContent = 'Jour ' + (p.day + 1) + ' sur ' + lvl.days.length;
+    el.progNeg.textContent = NEG_TAG;
+    el.progNeg.hidden = !lvl.neg;
 
     el.progTargets.textContent = '';
     for (i = 0; i < day.sets.length; i++) {
@@ -1155,10 +1171,14 @@
        c'est ce qui explique pourquoi le jour affiché a bougé — ou pas. */
     var left = restLeft();
     var parts = [];
-    if (p.last) {
-      parts.push(p.last.ok
-        ? 'Dernière séance validée.'
-        : 'Dernière séance manquée : ce jour est à refaire.');
+    if (p.last && p.last.ok) {
+      parts.push('Dernière séance validée.');
+    } else if (p.last) {
+      /* « À refaire » ne vaut que si le jour affiché est bien celui qui a été
+         manqué : le choix manuel des jours peut avoir déplacé le curseur. */
+      parts.push(p.last.level === p.level && p.last.day === p.day
+        ? 'Dernière séance manquée : ce jour est à refaire.'
+        : 'Dernière séance manquée.');
     }
     if (left > 0) {
       parts.push('Repos conseillé : encore ' + left + ' jour' + plural(left) + '.');
@@ -1372,10 +1392,99 @@
     }
   }
 
-  function renderSetup() {
-    var n = int(el.setupScore.value, 0, MAX_REPS, 0);
-    var lvl = LEVELS[levelForScore(n)];
-    el.setupLevel.textContent = 'Cycle ' + (levelForScore(n) + 1) + ' · ' + lvl.name;
+  /* -------------------------------------------- programme : choix du jour
+
+     Le niveau se feuillette à la flèche, le jour se désigne à la touche.
+     Rien n'est écrit tant que « Valider » n'est pas pressé.               */
+
+  var browseLevel = 0;
+  var browseDay = 0;
+
+  function renderDays() {
+    var lvl = LEVELS[browseLevel];
+    var p = state.prog;
+
+    el.daysSub.textContent = 'Niveau ' + (browseLevel + 1) + ' sur ' + LEVELS.length;
+    el.levelName.textContent = lvl.name;
+    el.levelNeg.textContent = NEG_TAG;
+    el.levelNeg.hidden = !lvl.neg;
+    el.levelPrev.disabled = browseLevel === 0;
+    el.levelNext.disabled = browseLevel === LAST_LEVEL;
+
+    el.dayList.textContent = '';
+
+    for (var i = 0; i < lvl.days.length; i++) {
+      var li = document.createElement('li');
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = i === browseDay ? 'day-pick is-picked' : 'day-pick';
+      btn.dataset.day = String(i);
+      btn.setAttribute('role', 'radio');
+      btn.setAttribute('aria-checked', i === browseDay ? 'true' : 'false');
+
+      var head = document.createElement('span');
+      head.className = 'day-pick-head';
+
+      var name = document.createElement('span');
+      name.className = 'day-pick-name';
+      name.textContent = 'Jour ' + (i + 1);
+      head.appendChild(name);
+
+      /* Le jour où en est le programme, pour se repérer en feuilletant. */
+      if (browseLevel === p.level && i === p.day) {
+        var here = document.createElement('span');
+        here.className = 'day-pick-here';
+        here.textContent = 'en cours';
+        head.appendChild(here);
+      }
+
+      var line = document.createElement('span');
+      line.className = 'day-pick-sets';
+      for (var k = 0; k < lvl.days[i].sets.length; k++) {
+        var cell = document.createElement('b');
+        cell.textContent = targetLabel(lvl.days[i].sets[k]);
+        line.appendChild(cell);
+      }
+
+      /* Les deux repos de la journée : entre les séries, puis avant la suivante. */
+      var rest = document.createElement('span');
+      rest.className = 'day-pick-rest';
+      rest.textContent = lvl.rest + ' s entre les séries · puis ' + pauseLabel(lvl.days[i]);
+
+      btn.appendChild(head);
+      btn.appendChild(line);
+      btn.appendChild(rest);
+      li.appendChild(btn);
+      el.dayList.appendChild(li);
+    }
+  }
+
+  function stepLevel(n) {
+    var next = clamp(browseLevel + n, 0, LAST_LEVEL);
+    if (next === browseLevel) return;
+    browseLevel = next;
+    /* Les cycles n'ont pas tous le même nombre de jours. */
+    browseDay = clamp(browseDay, 0, LEVELS[browseLevel].days.length - 1);
+    renderDays();
+  }
+
+  /* Le choix manuel fait autorité : une séance en cours ailleurs n'a plus
+     lieu d'être, elle imposerait sa propre suite au moment du bilan. */
+  function applyDays() {
+    var p = state.prog;
+    var moved = p.level !== browseLevel || p.day !== browseDay;
+
+    p.level = browseLevel;
+    p.day = browseDay;
+    if (moved && p.session) {
+      p.session = null;
+      stopRestTick();
+    }
+
+    commit();
+    closeDays();
+    toast('Prochaine séance : jour ' + (browseDay + 1) + ' · ' + LEVELS[browseLevel].name + '.');
   }
 
   function renderProgAdmin() {
@@ -1714,8 +1823,10 @@
     commit();
   }
 
-  /* Le test initial fixe le cycle et remet la progression à son premier jour. */
-  function applyTest(mode) {
+  /* Le record de départ fixe le cycle et pose la progression à son premier
+     jour. L'app s'ouvre sur le programme, qui découle directement du chiffre
+     qui vient d'être donné ; la bascule de Training mène au reste. */
+  function applyTest() {
     var score = int(el.setupScore.value, 0, MAX_REPS, 0);
     var p = state.prog;
     p.test = score;
@@ -1724,13 +1835,11 @@
     p.done = null;
     p.last = null;
     p.session = null;
-    p.mode = mode;
+    p.mode = 'programme';
     stopRestTick();
     closeSetup();
     commit();
-    toast(mode === 'programme'
-      ? 'Cycle ' + (p.level + 1) + ' · ' + LEVELS[p.level].name + '.'
-      : 'Entraînement libre. Le programme t’attend dans Training.');
+    toast('Cycle ' + (p.level + 1) + ' · ' + LEVELS[p.level].name + '. À toi de jouer.');
   }
 
   function removeSet(id) {
@@ -1922,11 +2031,18 @@
        ne fabrique pas d'entraînement. */
     var sessionOpen = location.hash === '#seance' && state.prog.session !== null;
     var emomOpen = location.hash === '#emom' && state.emom.session !== null;
+    var daysOpen = location.hash === '#jours';
 
     el.dayPage.hidden = !dayOpen;
     el.sessionPage.hidden = !sessionOpen;
     el.emomPage.hidden = !emomOpen;
+    el.daysPage.hidden = !daysOpen;
     lockBody();
+
+    if (daysOpen) {
+      renderDays();
+      window.scrollTo(0, 0);
+    }
 
     if (dayOpen) {
       renderDay();
@@ -1954,7 +2070,7 @@
   function lockBody() {
     document.body.classList.toggle('is-locked',
       !el.dayPage.hidden || !el.sessionPage.hidden || !el.emomPage.hidden ||
-      !el.setupPage.hidden);
+      !el.daysPage.hidden || !el.setupPage.hidden);
   }
 
   function openDayPage(date) {
@@ -1986,16 +2102,27 @@
     else syncRoute();
   }
 
-  /* Le choix du niveau ne passe pas par l'adresse : c'est un passage obligé au
-     premier lancement, le bouton retour ne doit pas pouvoir l'esquiver. */
+  function openDays() {
+    /* On ouvre là où en est le programme. */
+    browseLevel = clamp(state.prog.level, 0, LAST_LEVEL);
+    browseDay = clamp(state.prog.day, 0, LEVELS[browseLevel].days.length - 1);
+    history.pushState({ days: true }, '', '#jours');
+    syncRoute();
+    el.daysBack.focus();
+  }
+
+  function closeDays() {
+    if (location.hash === '#jours') history.back();
+    else syncRoute();
+  }
+
+  /* L'accueil ne passe pas par l'adresse : c'est un passage obligé au premier
+     lancement, le bouton retour ne doit pas pouvoir l'esquiver. */
   function openSetup() {
     el.setupScore.value = String(state.prog.test === null ? 8 : state.prog.test);
     el.setupPage.hidden = false;
-    el.setupClose.hidden = state.prog.mode === null;
     lockBody();
-    renderSetup();
     window.scrollTo(0, 0);
-    el.setupScore.focus();
   }
 
   function closeSetup() {
@@ -2086,7 +2213,7 @@
     if (!el.dayPage.hidden) closeDayPage();
     else if (!el.sessionPage.hidden) closeSession();
     else if (!el.emomPage.hidden) closeEmom();
-    else if (!el.setupPage.hidden && !el.setupClose.hidden) closeSetup();
+    else if (!el.daysPage.hidden) closeDays();
   });
 
   /* ---------------------------------------------- programme : écouteurs */
@@ -2172,28 +2299,33 @@
   el.setupScore.addEventListener('input', function () {
     var cleaned = el.setupScore.value.replace(/\D/g, '').slice(0, 3);
     if (cleaned !== el.setupScore.value) el.setupScore.value = cleaned;
-    renderSetup();
+  });
+  el.setupScore.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); applyTest(); }
   });
 
   $('setupDec').addEventListener('click', function () {
     el.setupScore.value = String(clamp(int(el.setupScore.value, 0, MAX_REPS, 0) - 1, 0, MAX_REPS));
-    renderSetup();
   });
   $('setupInc').addEventListener('click', function () {
     el.setupScore.value = String(clamp(int(el.setupScore.value, 0, MAX_REPS, 0) + 1, 0, MAX_REPS));
-    renderSetup();
   });
 
-  el.chooseProg.addEventListener('click', function () { applyTest('programme'); });
-  el.chooseFree.addEventListener('click', function () { applyTest('libre'); });
-  el.setupClose.addEventListener('click', closeSetup);
-  el.retestBtn.addEventListener('click', openSetup);
+  el.setupGo.addEventListener('click', applyTest);
 
-  el.resetProg.addEventListener('click', function () {
-    state.prog = emptyProg();
-    stopRestTick();
-    commit();
-    openSetup();
+  /* ------------------------------- programme : écran des jours */
+
+  el.pickDays.addEventListener('click', openDays);
+  el.daysBack.addEventListener('click', closeDays);
+  el.daysApply.addEventListener('click', applyDays);
+  el.levelPrev.addEventListener('click', function () { stepLevel(-1); });
+  el.levelNext.addEventListener('click', function () { stepLevel(1); });
+
+  el.dayList.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-day]');
+    if (!btn) return;
+    browseDay = int(btn.dataset.day, 0, LEVELS[browseLevel].days.length - 1, 0);
+    renderDays();
   });
 
   /* Modification directe dans les champs de la journée. */
