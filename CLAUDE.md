@@ -102,11 +102,19 @@ Pour trouver un bloc : `grep -n "^  /\* ---" app.js`.
 
 ## Git et déploiement
 
-- La branche de travail est imposée par la session ; **ne jamais pousser
-  ailleurs sans autorisation explicite**.
-- **La production, c’est `claude/cree-application-w5moka`.** Le workflow
-  `.github/workflows/pages.yml` ne se déclenche que sur cette branche (plus
-  `workflow_dispatch`). Déployer = pousser sur elle, en avance rapide.
+- **La branche par défaut du dépôt — et la production — c’est
+  `claude/cree-application-w5moka`.** Il n’y a pas de `main` : quand
+  l’utilisateur dit « main », c’est cette branche. Le workflow
+  `.github/workflows/pages.yml` ne se déclenche que sur elle (plus
+  `workflow_dispatch`). Déployer = y pousser, en avance rapide.
+- **Consigne permanente de l’utilisateur : livrer et déployer à chaque
+  demande.** Tout travail terminé se commite sur la branche de session, puis se
+  pousse en avance rapide sur la branche de production, sans redemander. Le
+  déploiement se vérifie ensuite par l’API GitHub. Cette autorisation vaut pour
+  la production seule ; toute autre branche demande un accord explicite.
+- Incrémenter `CACHE` dans `sw.js` **avant** de pousser en production dès qu’un
+  fichier du shell change. Une modification qui ne touche que la documentation
+  ne le nécessite pas — le workflow ne copie pas ces fichiers.
 - **Ne jamais ouvrir de pull request sans demande explicite.**
 - Messages de commit en français, à l’impératif ou au présent, sujet court sans
   point final — regarder `git log` pour le ton. Jamais d’identifiant de modèle
