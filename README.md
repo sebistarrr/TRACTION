@@ -321,4 +321,11 @@ manifest.webmanifest    manifeste PWA
 icons/                  icône SVG source + PNG 180 / 192 / 512 (dont maskable)
 fonts/                  Anton, Instrument Sans, JetBrains Mono en woff2 auto-hébergés
 tools/make_icons.py     régénère icons/ depuis la géométrie de l’icône
+CLAUDE.md               consignes de contribution : contraintes, conventions, pièges
+docs/ARCHITECTURE.md    modèle de données, agrégations, routage, mise en page, PWA
+docs/TESTS.md           protocole de vérification au navigateur
 ```
+
+Aucune étape de build, aucune dépendance : `index.html` s’ouvre tel quel. Pour
+modifier le code, commence par [`CLAUDE.md`](CLAUDE.md) — il dit ce qui ne se
+change pas et pourquoi.
